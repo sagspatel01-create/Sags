@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+/*
+  Dubai Villa & Townhouse Intelligence Engine — design tokens.
+  Editorial, dark, minimal. "A high-end real estate coffee-table book
+  rendered as software." Restrained palette, generous whitespace,
+  refined typography. Everything here is filmed for social content.
+*/
+
+:root {
+  /* Base surfaces — near-black, warm rather than clinical */
+  --ink-900: #0a0a0b; /* page background */
+  --ink-850: #101013;
+  --ink-800: #16161a; /* card / panel */
+  --ink-700: #1d1d22; /* raised panel */
+  --ink-600: #26262d; /* borders / hairlines (strong) */
+  --ink-500: #33333c; /* borders (subtle) */
+
+  /* Foreground — warm off-white, not pure white */
+  --paper-100: #f4f1ea; /* primary text */
+  --paper-300: #cfcabd; /* secondary text */
+  --paper-500: #8f8b80; /* muted text / labels */
+  --paper-700: #5c594f; /* faint / disabled */
+
+  /* Accent — muted bronze/gold. Luxury without gaudiness. */
+  --accent-400: #c9a45c;
+  --accent-500: #b8924a;
+  --accent-600: #9a7838;
+
+  /* Status accents for Ready / Offplan / Mixed */
+  --status-ready: #7fa88a; /* sage green */
+  --status-offplan: #c9a45c; /* bronze */
+  --status-mixed: #8a94b5; /* slate blue */
+
+  /* Semantic aliases */
+  --background: var(--ink-900);
+  --foreground: var(--paper-100);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-ink-900: var(--ink-900);
+  --color-ink-850: var(--ink-850);
+  --color-ink-800: var(--ink-800);
+  --color-ink-700: var(--ink-700);
+  --color-ink-600: var(--ink-600);
+  --color-ink-500: var(--ink-500);
+
+  --color-paper-100: var(--paper-100);
+  --color-paper-300: var(--paper-300);
+  --color-paper-500: var(--paper-500);
+  --color-paper-700: var(--paper-700);
+
+  --color-accent-400: var(--accent-400);
+  --color-accent-500: var(--accent-500);
+  --color-accent-600: var(--accent-600);
+
+  --color-status-ready: var(--status-ready);
+  --color-status-offplan: var(--status-offplan);
+  --color-status-mixed: var(--status-mixed);
+
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+* {
+  border-color: var(--ink-500);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Editorial helpers */
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+}
+
+.text-eyebrow {
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper-500);
+  font-weight: 500;
+}
+
+.hairline {
+  border-color: var(--ink-500);
+}
+
+/* Thin, editorial scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ink-600);
+  border-radius: 999px;
+  border: 3px solid var(--ink-900);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-500);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent-500) 35%, transparent);
+  color: var(--paper-100);
+}
