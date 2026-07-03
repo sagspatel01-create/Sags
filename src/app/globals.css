@@ -121,3 +121,76 @@ body {
   background: color-mix(in srgb, var(--accent-500) 35%, transparent);
   color: var(--paper-100);
 }
+
+/* ---------------------------------------------------------------------
+   Map — refined minimal markers (created imperatively by MapLibre, so
+   styled here in plain CSS rather than via purge-able utility classes).
+   --------------------------------------------------------------------- */
+.map-pin {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(-2px);
+}
+.map-pin-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ink-900) 70%, transparent),
+    0 0 0 4px currentColor;
+  color: var(--paper-700);
+  transition:
+    width 0.15s ease,
+    height 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.map-pin-label {
+  margin-top: 5px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--paper-300);
+  text-shadow:
+    0 1px 2px var(--ink-900),
+    0 0 4px var(--ink-900);
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.map-pin:hover .map-pin-label,
+.map-pin[data-selected="true"] .map-pin-label {
+  opacity: 1;
+}
+.map-pin:hover .map-pin-dot {
+  width: 13px;
+  height: 13px;
+}
+.map-pin[data-selected="true"] .map-pin-dot {
+  width: 14px;
+  height: 14px;
+  color: var(--accent-400);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ink-900) 70%, transparent),
+    0 0 0 5px var(--accent-400),
+    0 0 14px 2px color-mix(in srgb, var(--accent-400) 60%, transparent);
+}
+
+/* MapLibre control chrome — quiet it down to match the editorial theme. */
+.maplibregl-ctrl-attrib {
+  background: color-mix(in srgb, var(--ink-900) 70%, transparent) !important;
+  color: var(--paper-700) !important;
+  font-size: 10px !important;
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--paper-500) !important;
+}
+.maplibregl-ctrl-group {
+  background: var(--ink-800) !important;
+  border: 1px solid var(--ink-500) !important;
+  box-shadow: none !important;
+}
+.maplibregl-ctrl-group button {
+  filter: invert(0.85);
+}

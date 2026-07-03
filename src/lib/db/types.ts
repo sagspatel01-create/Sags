@@ -363,6 +363,35 @@ export interface Database {
         };
         Relationships: [];
       };
+      community_pins: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          status: StatusTag;
+          positioning_tier: PositioningTier | null;
+          developer_name: string | null;
+          lng: number;
+          lat: number;
+          sub_community_count: number;
+          is_placeholder: boolean;
+        };
+        Relationships: [];
+      };
+      sub_community_pins: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          status: StatusTag;
+          community_id: string;
+          community_name: string;
+          lng: number;
+          lat: number;
+          is_placeholder: boolean;
+        };
+        Relationships: [];
+      };
     };
     Functions: Record<string, never>;
     Enums: {
