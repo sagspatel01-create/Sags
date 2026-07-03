@@ -1,8 +1,12 @@
+import Link from "next/link";
 import {
   isSupabaseConfigured,
   isMapsConfigured,
   isAnthropicConfigured,
 } from "@/lib/env";
+import { getActiveProfile } from "@/lib/client-profile.server";
+import { BUYER_LABEL } from "@/lib/client-profile";
+import { aed } from "@/lib/format";
 
 function Pill({ label, ok }: { label: string; ok: boolean }) {
   return (
@@ -15,13 +19,34 @@ function Pill({ label, ok }: { label: string; ok: boolean }) {
   );
 }
 
-/** Top bar — phase label + integration status + sign out. */
-export function Topbar() {
+/** Top bar — active client + integration status + sign out. */
+export async function Topbar() {
   const supa = isSupabaseConfigured();
+  const active = await getActiveProfile();
   return (
     <header className="flex items-center justify-between border-b border-ink-500 bg-ink-900/80 px-6 py-3 backdrop-blur">
       <div className="flex items-center gap-3">
-        <span className="text-eyebrow">Phase 1 · Breadth &amp; comparison shell</span>
+        {active ? (
+          <Link
+            href="/client"
+            className="flex items-center gap-2 rounded-full border border-accent-600/60 bg-accent-500/10 px-3 py-1.5 text-xs transition-colors hover:bg-accent-500/20"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-accent-400" />
+            <span className="text-paper-100">{active.session_label}</span>
+            <span className="text-paper-500">
+              {[
+                active.budget ? aed(active.budget) : null,
+                active.buyer_type ? BUYER_LABEL[active.buyer_type] : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          </Link>
+        ) : (
+          <Link href="/client" className="text-eyebrow hover:text-paper-300">
+            No active client · start session →
+          </Link>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <Pill label="Supabase" ok={supa} />

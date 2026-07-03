@@ -177,6 +177,98 @@ body {
     0 0 14px 2px color-mix(in srgb, var(--accent-400) 60%, transparent);
 }
 
+/* ---------------------------------------------------------------------
+   Form primitives (used by the client intake and admin surfaces).
+   --------------------------------------------------------------------- */
+.input {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid var(--ink-500);
+  background: var(--ink-800);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--paper-100);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.input::placeholder {
+  color: var(--paper-700);
+}
+.input:focus {
+  border-color: var(--accent-500);
+}
+.chip {
+  border-radius: 999px;
+  border: 1px solid var(--ink-500);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--paper-300);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.chip:hover {
+  background: var(--ink-700);
+  color: var(--paper-100);
+}
+.seg {
+  border-radius: 0.5rem;
+  border: 1px solid var(--ink-500);
+  padding: 0.5rem 0.9rem;
+  font-size: 0.8125rem;
+  color: var(--paper-300);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.seg:hover {
+  background: var(--ink-700);
+  color: var(--paper-100);
+}
+.seg-on {
+  border-color: var(--accent-500);
+  background: color-mix(in srgb, var(--accent-500) 18%, transparent);
+  color: var(--paper-100);
+}
+.range {
+  width: 100%;
+  height: 3px;
+  appearance: none;
+  background: var(--ink-600);
+  border-radius: 999px;
+  outline: none;
+}
+.range::-webkit-slider-thumb {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  background: var(--accent-400);
+  cursor: pointer;
+  border: 2px solid var(--ink-900);
+}
+.range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  background: var(--accent-400);
+  cursor: pointer;
+  border: 2px solid var(--ink-900);
+}
+.btn-primary {
+  border-radius: 0.5rem;
+  background: var(--accent-500);
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink-900);
+  transition: background 0.15s ease;
+}
+.btn-primary:hover {
+  background: var(--accent-400);
+}
+
 /* MapLibre control chrome — quiet it down to match the editorial theme. */
 .maplibregl-ctrl-attrib {
   background: color-mix(in srgb, var(--ink-900) 70%, transparent) !important;
