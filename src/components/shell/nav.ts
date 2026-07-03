@@ -14,7 +14,7 @@ export type NavItem = {
 export const NAV: NavItem[] = [
   { label: "Overview", href: "/", milestone: null, ready: true },
   { label: "Map", href: "/map", milestone: 1, ready: true },
-  { label: "Communities", href: "/communities", milestone: 2, ready: false },
+  { label: "Communities", href: "/communities", milestone: 2, ready: true },
   { label: "Client Profile", href: "/client", milestone: 3, ready: false },
   { label: "Compare", href: "/compare", milestone: 4, ready: false },
   { label: "Filters", href: "/browse", milestone: 6, ready: false },

@@ -36,8 +36,11 @@ screen-recorded. With credentials, everything is behind a single-admin login.
 
 1. Create a Supabase project.
 2. Run the migrations in order (SQL editor or `supabase db push`):
-   `supabase/migrations/0001…0007`.
-3. Load breadth data: run `supabase/seed.sql`.
+   `supabase/migrations/0001…0010`. `0010` creates the private `assets`
+   Storage bucket + policies — if your role can't touch `storage`, create the
+   bucket from the dashboard (Storage → New bucket "assets", private).
+3. Load breadth data: run `supabase/seed.sql`. Optionally run
+   `supabase/seed_dubai_hills.sql` for the worked example.
 4. Create the single admin user in **Auth → Users** (email/password). Set
    `ADMIN_EMAIL` to that address.
 
@@ -78,7 +81,21 @@ src/
     db/types.ts       hand-authored DB types (regenerate once live)
     sources/          swappable source-module registry
     env.ts            non-throwing env access
+  components/
+    community/        dashboard sections, master-plan viewer, uploader
 supabase/
-  migrations/         0001…0007 schema
+  migrations/         0001…0010 schema (incl. plan assets + storage)
   seed.sql            breadth skeleton
+  seed_dubai_hills.sql  worked-example content (authentic facts only)
 ```
+
+## Milestones built
+
+- **M1 — Map**: bespoke dark MapLibre map (free OpenFreeMap tiles), all
+  communities pinned, click → detail panel → community dashboard.
+- **M2 — Community dashboards**: per-community + per-sub-community pages;
+  the **interactive master-plan viewer** (zoom/pan brochure image with
+  clickable hotspots — navigation + Modon-style amenity layers); unit
+  archetypes in the five categorized listing groups; the phase price-journey;
+  and the admin **document/asset uploader** (live edit loop) backed by
+  Supabase Storage.

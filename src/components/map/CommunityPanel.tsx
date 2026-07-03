@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { CommunityPin } from "@/lib/map/types";
 import type { PositioningTier } from "@/lib/db/types";
@@ -60,19 +61,19 @@ export function CommunityPanel({
 
       <div className="flex-1 overflow-y-auto px-6 py-6">
         <p className="text-sm leading-relaxed text-paper-500">
-          Full community dashboard — master plan, phases, unit archetypes
-          (in the five categorized listing groups), context and documents —
-          arrives in Milestone 2.
+          Open the full community dashboard for the interactive master plan,
+          phases, unit archetypes (in the five categorized listing groups),
+          context and documents.
         </p>
       </div>
 
       <div className="border-t border-ink-500 p-4">
-        <button
-          disabled
-          className="w-full cursor-not-allowed rounded-lg border border-ink-500 px-4 py-2.5 text-sm text-paper-500"
+        <Link
+          href={`/communities/${pin.slug}`}
+          className="block w-full rounded-lg bg-accent-500 px-4 py-2.5 text-center text-sm font-medium text-ink-900 transition-colors hover:bg-accent-400"
         >
-          Open community dashboard · Milestone 2
-        </button>
+          Open community dashboard
+        </Link>
       </div>
     </div>
   );

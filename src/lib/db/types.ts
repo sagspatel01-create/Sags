@@ -18,9 +18,24 @@ export type PositioningTier =
   | "premium"
   | "mid"
   | "accessible";
+export type PlanKind =
+  | "master_plan"
+  | "site_plan"
+  | "floor_plan"
+  | "brochure"
+  | "gallery"
+  | "other";
+export type HotspotShape = "point" | "rect" | "polygon";
+export type HotspotTarget =
+  | "community"
+  | "sub_community"
+  | "phase"
+  | "unit_archetype"
+  | "plan_asset"
+  | "url";
 
 // ---- Row shapes ------------------------------------------------------
-export interface Developer {
+export type Developer = {
   id: string;
   name: string;
   slug: string;
@@ -32,7 +47,7 @@ export interface Developer {
   updated_at: string;
 }
 
-export interface Community {
+export type Community = {
   id: string;
   developer_id: string | null;
   name: string;
@@ -55,7 +70,7 @@ export interface Community {
   updated_at: string;
 }
 
-export interface SubCommunity {
+export type SubCommunity = {
   id: string;
   community_id: string;
   name: string;
@@ -74,7 +89,7 @@ export interface SubCommunity {
   updated_at: string;
 }
 
-export interface Phase {
+export type Phase = {
   id: string;
   sub_community_id: string;
   phase_name: string;
@@ -87,7 +102,7 @@ export interface Phase {
   updated_at: string;
 }
 
-export interface UnitArchetype {
+export type UnitArchetype = {
   id: string;
   sub_community_id: string;
   phase_id: string | null;
@@ -116,7 +131,7 @@ export interface UnitArchetype {
   updated_at: string;
 }
 
-export interface Transaction {
+export type Transaction = {
   id: string;
   sub_community_id: string;
   phase_id: string | null;
@@ -130,7 +145,7 @@ export interface Transaction {
   created_at: string;
 }
 
-export interface Listing {
+export type Listing = {
   id: string;
   sub_community_id: string;
   phase_id: string | null;
@@ -149,7 +164,7 @@ export interface Listing {
   created_at: string;
 }
 
-export interface PriceHistory {
+export type PriceHistory = {
   id: string;
   sub_community_id: string;
   unit_type: UnitType | null;
@@ -160,7 +175,7 @@ export interface PriceHistory {
   created_at: string;
 }
 
-export interface CapitalGrowth {
+export type CapitalGrowth = {
   id: string;
   sub_community_id: string;
   unit_type: UnitType | null;
@@ -169,7 +184,7 @@ export interface CapitalGrowth {
   calculated_at: string;
 }
 
-export interface RentalData {
+export type RentalData = {
   id: string;
   sub_community_id: string;
   unit_type: UnitType | null;
@@ -180,7 +195,7 @@ export interface RentalData {
   updated_at: string;
 }
 
-export interface Absorption {
+export type Absorption = {
   id: string;
   sub_community_id: string;
   phase_name: string | null;
@@ -193,7 +208,7 @@ export interface Absorption {
   created_at: string;
 }
 
-export interface PaymentPlan {
+export type PaymentPlan = {
   id: string;
   community_id: string;
   plan_type: string | null;
@@ -205,7 +220,7 @@ export interface PaymentPlan {
   updated_at: string;
 }
 
-export interface School {
+export type School = {
   id: string;
   name: string;
   geo_point: unknown;
@@ -217,7 +232,7 @@ export interface School {
   updated_at: string;
 }
 
-export interface Amenity {
+export type Amenity = {
   id: string;
   name: string;
   category: string | null;
@@ -225,7 +240,7 @@ export interface Amenity {
   created_at: string;
 }
 
-export interface CommuteTime {
+export type CommuteTime = {
   id: string;
   community_id: string;
   destination_name: string;
@@ -234,7 +249,7 @@ export interface CommuteTime {
   updated_at: string;
 }
 
-export interface InfrastructureProject {
+export type InfrastructureProject = {
   id: string;
   name: string;
   description: string | null;
@@ -246,7 +261,7 @@ export interface InfrastructureProject {
   updated_at: string;
 }
 
-export interface Document {
+export type Document = {
   id: string;
   community_id: string | null;
   sub_community_id: string | null;
@@ -256,7 +271,7 @@ export interface Document {
   created_at: string;
 }
 
-export interface ClientProfile {
+export type ClientProfile = {
   id: string;
   session_label: string | null;
   budget: number | null;
@@ -269,7 +284,7 @@ export interface ClientProfile {
   updated_at: string;
 }
 
-export interface DataSource {
+export type DataSource = {
   id: string;
   key: string;
   label: string;
@@ -284,7 +299,7 @@ export interface DataSource {
   updated_at: string;
 }
 
-export interface FilterDefinition {
+export type FilterDefinition = {
   id: string;
   key: string;
   label: string;
@@ -302,7 +317,7 @@ export interface FilterDefinition {
   updated_at: string;
 }
 
-export interface GeneratedContent {
+export type GeneratedContent = {
   id: string;
   content_type: string;
   client_profile_id: string | null;
@@ -317,15 +332,57 @@ export interface GeneratedContent {
   updated_at: string;
 }
 
+export type PlanAsset = {
+  id: string;
+  community_id: string | null;
+  sub_community_id: string | null;
+  phase_id: string | null;
+  unit_archetype_id: string | null;
+  kind: PlanKind;
+  title: string | null;
+  storage_path: string | null;
+  image_url: string | null;
+  natural_width: number | null;
+  natural_height: number | null;
+  sort_order: number;
+  is_placeholder: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PlanHotspot = {
+  id: string;
+  plan_asset_id: string;
+  label: string | null;
+  category: string;
+  icon: string | null;
+  shape: HotspotShape;
+  coords: Record<string, unknown>;
+  target_type: HotspotTarget;
+  target_community_id: string | null;
+  target_sub_community_id: string | null;
+  target_phase_id: string | null;
+  target_unit_archetype_id: string | null;
+  target_plan_asset_id: string | null;
+  target_url: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // ---- Database generic (Supabase-compatible shape) --------------------
+// Supabase's GenericTable constraint requires Row/Insert/Update to be
+// assignable to Record<string, unknown>. Interfaces (unlike type aliases)
+// lack an implicit index signature, so we intersect one in — otherwise the
+// schema fails the constraint and insert payloads collapse to `never`.
 type TableShape<Row> = {
-  Row: Row;
-  Insert: Partial<Row>;
-  Update: Partial<Row>;
+  Row: Row & Record<string, unknown>;
+  Insert: Partial<Row> & Record<string, unknown>;
+  Update: Partial<Row> & Record<string, unknown>;
   Relationships: [];
 };
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       developers: TableShape<Developer>;
@@ -349,6 +406,8 @@ export interface Database {
       data_sources: TableShape<DataSource>;
       filter_definitions: TableShape<FilterDefinition>;
       generated_content: TableShape<GeneratedContent>;
+      plan_assets: TableShape<PlanAsset>;
+      plan_hotspots: TableShape<PlanHotspot>;
     };
     Views: {
       active_transactions: { Row: Transaction; Relationships: [] };
@@ -393,7 +452,7 @@ export interface Database {
         Relationships: [];
       };
     };
-    Functions: Record<string, never>;
+    Functions: { [_ in never]: never };
     Enums: {
       status_tag: StatusTag;
       unit_type: UnitType;
@@ -401,6 +460,10 @@ export interface Database {
       furnishing_status: FurnishingStatus;
       buyer_type: BuyerType;
       positioning_tier: PositioningTier;
+      plan_kind: PlanKind;
+      hotspot_shape: HotspotShape;
+      hotspot_target: HotspotTarget;
     };
+    CompositeTypes: { [_ in never]: never };
   };
 }
