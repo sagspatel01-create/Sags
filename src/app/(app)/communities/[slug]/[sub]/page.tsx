@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getSubCommunity } from "@/lib/data/communities";
+import { getTailoredCopy } from "@/lib/data/generated";
+import { getActiveProfile } from "@/lib/client-profile.server";
+import { TailoredCopy } from "@/components/community/TailoredCopy";
 import { toPlanView, pickAsset } from "@/lib/data/plans";
 import { resolveStorageUrl } from "@/lib/supabase/storage";
 import { Section } from "@/components/ui/Section";
@@ -27,6 +30,14 @@ export default async function SubCommunityPage({
 
   const s = await getSubCommunity(slug, sub);
   if (!s) notFound();
+
+  const profile = await getActiveProfile();
+  const whoRow = await getTailoredCopy("who_its_for", profile?.id ?? null, {
+    subCommunityId: s.id,
+  });
+  const whoTailored = whoRow?.body
+    ? { id: whoRow.id, body: whoRow.body, is_owner_edited: whoRow.is_owner_edited }
+    : null;
 
   const sitePlan = pickAsset(s.plan_assets, "site_plan") ?? pickAsset(s.plan_assets, "master_plan");
   const planView = await toPlanView(sitePlan, (h) =>
@@ -155,17 +166,18 @@ export default async function SubCommunityPage({
         )}
       </Section>
 
-      {/* Who it's for */}
+      {/* Who it's for — client-tailored */}
       <Section eyebrow="The buyer" title="Who it's for">
-        {s.who_its_for_base ? (
-          <p className="max-w-3xl leading-relaxed text-paper-300">
-            {s.who_its_for_base}
-          </p>
-        ) : (
-          <div className="max-w-3xl rounded-lg border border-dashed border-ink-500 p-5">
-            <Empty label="No profile yet" />
-          </div>
-        )}
+        <TailoredCopy
+          kind="who_its_for"
+          base={s.who_its_for_base}
+          tailored={whoTailored}
+          hasProfile={Boolean(profile)}
+          sessionLabel={profile?.session_label ?? null}
+          target={{ subCommunityId: s.id }}
+          emptyLabel="No profile yet"
+          emptyHint="With a client session active, tailor this to speak directly to them."
+        />
       </Section>
 
       {/* Documents */}

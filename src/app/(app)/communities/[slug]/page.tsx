@@ -2,8 +2,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getCommunityBySlug } from "@/lib/data/communities";
+import { getTailoredCopy } from "@/lib/data/generated";
+import { getActiveProfile } from "@/lib/client-profile.server";
 import { toPlanView, pickAsset } from "@/lib/data/plans";
 import { resolveStorageUrl } from "@/lib/supabase/storage";
+import { TailoredCopy } from "@/components/community/TailoredCopy";
 import { Section } from "@/components/ui/Section";
 import { FactList } from "@/components/ui/FactList";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -28,6 +31,18 @@ export default async function CommunityPage({
 
   const c = await getCommunityBySlug(slug);
   if (!c) notFound();
+
+  const profile = await getActiveProfile();
+  const [whoRow, descRow] = await Promise.all([
+    getTailoredCopy("who_its_for", profile?.id ?? null, { communityId: c.id }),
+    getTailoredCopy("description", profile?.id ?? null, { communityId: c.id }),
+  ]);
+  const whoTailored = whoRow?.body
+    ? { id: whoRow.id, body: whoRow.body, is_owner_edited: whoRow.is_owner_edited }
+    : null;
+  const descTailored = descRow?.body
+    ? { id: descRow.id, body: descRow.body, is_owner_edited: descRow.is_owner_edited }
+    : null;
 
   const masterPlan = pickAsset(c.plan_assets, "master_plan");
   const subSlug = new Map(c.sub_communities.map((s) => [s.id, s.slug]));
@@ -125,39 +140,31 @@ export default async function CommunityPage({
       <Section eyebrow="At a glance" title="Community facts">
         <div className="grid gap-10 md:grid-cols-2">
           <FactList facts={facts} columns={1} />
-          <div>
-            {c.description_long ? (
-              <p className="whitespace-pre-line leading-relaxed text-paper-300">
-                {c.description_long}
-              </p>
-            ) : (
-              <div className="rounded-lg border border-dashed border-ink-500 p-5">
-                <Empty label="No description yet" />
-                <p className="mt-2 text-sm text-paper-500">
-                  Content-grade narrative — character, lifestyle, what it&apos;s
-                  known for — will live here.
-                </p>
-              </div>
-            )}
-          </div>
+          <TailoredCopy
+            kind="description"
+            base={c.description_long}
+            tailored={descTailored}
+            hasProfile={Boolean(profile)}
+            sessionLabel={profile?.session_label ?? null}
+            target={{ communityId: c.id }}
+            emptyLabel="No description yet"
+            emptyHint="Content-grade narrative — character, lifestyle, what it's known for."
+          />
         </div>
       </Section>
 
-      {/* Who it's for */}
+      {/* Who it's for — client-tailored */}
       <Section eyebrow="The buyer" title="Who it's for">
-        {c.who_its_for_base ? (
-          <p className="max-w-3xl leading-relaxed text-paper-300">
-            {c.who_its_for_base}
-          </p>
-        ) : (
-          <div className="max-w-3xl rounded-lg border border-dashed border-ink-500 p-5">
-            <Empty label="No profile yet" />
-            <p className="mt-2 text-sm text-paper-500">
-              The base buyer profile (Layer 1). In a client session this
-              regenerates to speak directly to the entered client (Milestone 5).
-            </p>
-          </div>
-        )}
+        <TailoredCopy
+          kind="who_its_for"
+          base={c.who_its_for_base}
+          tailored={whoTailored}
+          hasProfile={Boolean(profile)}
+          sessionLabel={profile?.session_label ?? null}
+          target={{ communityId: c.id }}
+          emptyLabel="No profile yet"
+          emptyHint="The base buyer profile. With a client session active, tailor it to speak directly to them."
+        />
       </Section>
 
       {/* Sub-communities */}

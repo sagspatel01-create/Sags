@@ -15,6 +15,8 @@ export const env = {
   googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
   googleMapsMapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? "",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
+  // Generation model — overridable so the owner can change it without code edits.
+  anthropicModel: process.env.ANTHROPIC_MODEL ?? "claude-opus-4-8",
   // Restricts sign-in to the single owner. Optional; when set, only this
   // email may authenticate.
   adminEmail: process.env.ADMIN_EMAIL ?? "",
