@@ -96,6 +96,12 @@ export default async function CommunityPage({
               {TIER_LABEL[c.positioning_tier]}
             </span>
           )}
+          <Link
+            href={`/compare?ids=${c.slug}`}
+            className="rounded-lg border border-ink-500 px-3 py-1.5 text-xs text-paper-300 transition-colors hover:bg-ink-700 hover:text-paper-100"
+          >
+            Compare
+          </Link>
         </div>
       </div>
 
