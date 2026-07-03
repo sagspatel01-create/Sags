@@ -65,6 +65,7 @@ export type Community = {
   hero_image_url: string | null;
   geo_center: unknown;
   geo_boundary: unknown;
+  character_tags: string[];
   is_placeholder: boolean;
   created_at: string;
   updated_at: string;

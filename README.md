@@ -84,9 +84,10 @@ src/
   components/
     community/        dashboard sections, master-plan viewer, uploader
 supabase/
-  migrations/         0001…0010 schema (incl. plan assets + storage)
+  migrations/         0001…0011 schema (taxonomy, market, plans, storage, tags)
   seed.sql            breadth skeleton
   seed_dubai_hills.sql  worked-example content (authentic facts only)
+  seed_tags.sql       community character tags (store filter)
 ```
 
 ## Milestones built
@@ -99,3 +100,15 @@ supabase/
   archetypes in the five categorized listing groups; the phase price-journey;
   and the admin **document/asset uploader** (live edit loop) backed by
   Supabase Storage.
+- **M3 — Client profile intake**: session-start form (budget, buyer type,
+  financing, weighted priorities); active-client context across the app;
+  budget → achievable-tier shortlist.
+- **M4 — Comparison engine**: 2–4 communities side by side across all 14
+  category groups, with budget-fit chips and client-priority highlighting.
+- **M5 — Client-tailored copy**: who-it's-for / description regenerate via the
+  Anthropic API to speak to the entered client (Layer 1 base ↔ Layer 2
+  tailored, owner-editable). Needs `ANTHROPIC_API_KEY`.
+- **M6 — Config-driven store**: `/browse` filters the catalogue across every
+  field (config-driven — new filters via `filter_definitions` / `FILTER_CONFIG`
+  without re-architecting), unknown-friendly market filters, budget→tier
+  fallback, client-fit scoring + "Match to client", and an add-to-compare tray.
