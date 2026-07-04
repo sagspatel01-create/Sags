@@ -38,6 +38,7 @@ export function Underwriter({ deals }: { deals: DealOption[] }) {
   const [bua, setBua] = useState<number | null>(deals[0]?.bua_sqft ?? null);
   const [sc, setSc] = useState<number | null>(deals[0]?.service_charge_per_sqft ?? 4);
 
+  const [notes, setNotes] = useState("");
   const [verdict, setVerdict] = useState<string | null>(null);
   const [loadingVerdict, setLoadingVerdict] = useState(false);
   const [verdictErr, setVerdictErr] = useState<string | null>(null);
@@ -69,6 +70,7 @@ export function Underwriter({ deals }: { deals: DealOption[] }) {
       status: dealType,
       tier: deal?.tier ?? null,
       developer: deal?.developer ?? null,
+      notes: notes.trim() || null,
     });
     setLoadingVerdict(false);
     if (res.verdict) setVerdict(res.verdict);
@@ -181,6 +183,24 @@ export function Underwriter({ deals }: { deals: DealOption[] }) {
           Assumptions: {r.assumptions.join(" · ")}. Figures are model outputs
           from your inputs, not guarantees.
         </p>
+
+        {/* Growth thesis / factors */}
+        <div className="elevate rounded-xl border border-ink-500 bg-ink-800/50 p-5">
+          <p className="text-eyebrow">Growth factors &amp; notes</p>
+          <p className="mt-1 text-xs text-paper-500">
+            Why you expect this to perform — construction progress, handover /
+            completion dates, government &amp; infrastructure plans, developer
+            track record, absorption, supply. Claude weaves these into the
+            verdict and the investor case.
+          </p>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={4}
+            placeholder="e.g. Metro Blue Line station 600m, handover Q4 2027, 90% sold in phase 1, master-community completion 2026, DLD +18% YoY in the district…"
+            className="mt-3 w-full rounded-lg border border-ink-500 bg-ink-900 px-3 py-2.5 text-sm text-paper-100 outline-none placeholder:text-paper-700 focus:border-accent-500"
+          />
+        </div>
 
         {/* Verdict */}
         <div className="elevate rounded-xl border border-ink-500 bg-ink-800/50 p-5">

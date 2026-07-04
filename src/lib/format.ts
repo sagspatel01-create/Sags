@@ -49,7 +49,9 @@ export function sqft(value: number | null | undefined): string | null {
   return `${num(value)} sqft`;
 }
 
+/** Percentage, rounded to one decimal (drops a trailing .0). */
 export function pct(value: number | null | undefined): string | null {
   if (value === null || value === undefined) return null;
-  return `${value}%`;
+  const r = Math.round(value * 10) / 10;
+  return `${Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1)}%`;
 }

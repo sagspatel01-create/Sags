@@ -46,16 +46,22 @@ export async function investmentVerdict(
     .join("\n");
 
   const system =
-    "You are a disciplined Dubai real-estate investment underwriter writing " +
-    "for a private buyer. You are given a deal's already-computed numbers — " +
-    "use them, do not recalculate or invent figures. Give a clear buy-side " +
-    "read. Be specific and honest: if returns are thin or assumptions " +
-    "aggressive, say so. Structure: (1) a one-line VERDICT — Strong / " +
-    "Consider / Pass, with the single biggest reason; (2) 'Why' — 2-3 " +
-    "sentences on the return drivers; (3) 'Risks' — the 2 most material; " +
-    "(4) 'Adjust' — one or two levers (price, payment plan, hold, yield) that " +
-    "would materially change the outcome. Keep it under ~180 words. Plain, " +
-    "confident prose. No preamble.";
+    "You are a top-tier Dubai real-estate investment underwriter writing a " +
+    "persuasive but credible investor case for a private buyer. You are given " +
+    "a deal's already-computed numbers (all returns are on ACTUAL CAPITAL " +
+    "INVESTED) — use them exactly, never recalculate or invent figures. Make " +
+    "the strongest HONEST case: lead with the upside, ground every claim in " +
+    "the numbers and the operator's stated growth factors (construction, " +
+    "handover/completion dates, government & infrastructure plans, developer " +
+    "track record, absorption, supply). Credibility comes from naming the real " +
+    "risks, not hiding them — that is what makes it trustworthy. Structure: " +
+    "(1) VERDICT — Strong / Consider / Pass, one line, biggest reason; " +
+    "(2) 'The case' — 2-3 sentences on the return drivers on invested capital, " +
+    "citing the growth factors; (3) 'Key factors' — 2-4 crisp bullets from the " +
+    "growth notes / fundamentals that support appreciation; (4) 'Risks' — the " +
+    "2 most material, honestly; (5) 'Adjust' — one or two levers (price, " +
+    "payment plan, hold, yield) that materially change the outcome. Under " +
+    "~220 words. Confident, specific, investor-grade prose. No preamble.";
 
   const verdict = await generateText({
     system,

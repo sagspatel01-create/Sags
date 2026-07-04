@@ -5,6 +5,7 @@ import { getCommunities } from "@/lib/data/communities";
 import { getCommunityPricing } from "@/lib/data/pricing";
 import { clearProfile } from "./actions";
 import { IntakeForm } from "@/components/client/IntakeForm";
+import { PropertySearch } from "@/components/search/PropertySearch";
 import { Card, Eyebrow } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
@@ -48,10 +49,21 @@ export default async function ClientPage() {
         Client profile
       </h1>
       <p className="mt-4 max-w-2xl text-paper-300">
-        Enter the client at the start of the call. The store filters to what&apos;s
-        achievable, and — from Milestone 5 — the descriptions and
-        recommendations rewrite to speak directly to them.
+        Enter the client at the start of the call, then find the exact homes
+        that fit their brief — searched across every priced villa and townhouse
+        in the engine, the way you&apos;d search Bayut or Property Finder.
       </p>
+
+      {/* Requirement-based property search */}
+      <div className="mt-8">
+        <p className="text-eyebrow">Find matching homes</p>
+        <h2 className="mt-1 font-display text-2xl text-paper-100">
+          Search the client&apos;s brief
+        </h2>
+        <div className="mt-4">
+          <PropertySearch defaultBudget={active?.budget ?? null} />
+        </div>
+      </div>
 
       {active && (
         <div className="mt-8 space-y-6">
