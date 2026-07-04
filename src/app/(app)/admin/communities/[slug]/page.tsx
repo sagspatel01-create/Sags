@@ -43,6 +43,13 @@ export default async function AdminCommunity({
       <h1 className="mt-4 font-display text-3xl text-paper-100">{c.name}</h1>
       <p className="text-sm text-paper-500">{c.developer?.name ?? "—"}</p>
 
+      <Link
+        href={`/admin/communities/${c.slug}/plan`}
+        className="mt-4 inline-flex items-center gap-2 rounded-lg border border-accent-500/40 bg-accent-500/10 px-4 py-2 text-sm text-accent-400 transition-colors hover:bg-accent-500/20"
+      >
+        ◲ Edit master-plan hotspots →
+      </Link>
+
       <form action={updateCommunity.bind(null, slug)} className="mt-8 space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <Select label="Status" name="status" defaultValue={c.status} options={STATUS_OPTIONS} />

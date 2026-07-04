@@ -36,6 +36,12 @@ function int(fd: FormData, k: string): number | null {
 function bool(fd: FormData, k: string): boolean {
   return fd.get(k) === "on";
 }
+function flt(fd: FormData, k: string): number | null {
+  const v = str(fd, k);
+  if (v === null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 function tags(fd: FormData, k: string): string[] {
   const v = str(fd, k);
   return v ? v.split(",").map((t) => t.trim().replace(/\s+/g, "-").toLowerCase()).filter(Boolean) : [];
@@ -157,6 +163,72 @@ export async function deleteUnit(subId: string, id: string) {
   if (!supabase) return;
   await db(supabase).from("unit_archetypes").delete().eq("id", id);
   revalidatePath(`/admin/sub/${subId}`);
+}
+
+// ---- plan hotspots (the interactive-brochure editor) -----------------
+// A navigation hotspot drills to a sub-community; an amenity hotspot
+// (school/park/beach…) is a non-linking Modon-style marker. coords are
+// stored as percentages {x,y} of the source image.
+function hotspotRow(fd: FormData) {
+  const subId = str(fd, "target_sub_community_id");
+  const url = str(fd, "target_url");
+  const navigation = Boolean(subId);
+  return {
+    label: str(fd, "label"),
+    category: str(fd, "category") ?? (navigation ? "navigation" : "park"),
+    coords: { x: flt(fd, "x") ?? 50, y: flt(fd, "y") ?? 50 },
+    shape: "point",
+    target_type: navigation ? "sub_community" : "url",
+    target_sub_community_id: subId,
+    target_url: navigation ? null : url,
+  };
+}
+
+export async function createHotspot(communitySlug: string, fd: FormData) {
+  const supabase = await createClient();
+  if (!supabase) return;
+  await db(supabase)
+    .from("plan_hotspots")
+    .insert({ plan_asset_id: str(fd, "plan_asset_id"), ...hotspotRow(fd) });
+  revalidatePath(`/admin/communities/${communitySlug}/plan`);
+  revalidatePath(`/communities/${communitySlug}`);
+}
+
+export async function updateHotspot(
+  communitySlug: string,
+  id: string,
+  fd: FormData,
+) {
+  const supabase = await createClient();
+  if (!supabase) return;
+  await db(supabase).from("plan_hotspots").update(hotspotRow(fd)).eq("id", id);
+  revalidatePath(`/admin/communities/${communitySlug}/plan`);
+  revalidatePath(`/communities/${communitySlug}`);
+}
+
+/** Lightweight position-only save (used when a marker is dragged). */
+export async function moveHotspot(
+  communitySlug: string,
+  id: string,
+  x: number,
+  y: number,
+) {
+  const supabase = await createClient();
+  if (!supabase) return;
+  await db(supabase)
+    .from("plan_hotspots")
+    .update({ coords: { x, y } })
+    .eq("id", id);
+  revalidatePath(`/admin/communities/${communitySlug}/plan`);
+  revalidatePath(`/communities/${communitySlug}`);
+}
+
+export async function deleteHotspot(communitySlug: string, id: string) {
+  const supabase = await createClient();
+  if (!supabase) return;
+  await db(supabase).from("plan_hotspots").delete().eq("id", id);
+  revalidatePath(`/admin/communities/${communitySlug}/plan`);
+  revalidatePath(`/communities/${communitySlug}`);
 }
 
 // ---- transactions (Phase-2 groundwork; manual entry) -----------------
