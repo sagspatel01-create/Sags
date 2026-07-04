@@ -22,5 +22,6 @@ export const NAV: NavItem[] = [
   { label: "Live Market", href: "/live", milestone: null, ready: true },
   { label: "Admin", href: "/admin", milestone: null, ready: true },
   { label: "Absorb", href: "/admin/absorb", milestone: null, ready: true },
+  { label: "Transactions", href: "/admin/transactions", milestone: null, ready: true },
   { label: "Sources", href: "/sources", milestone: null, ready: true },
 ];

@@ -13,6 +13,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Empty } from "@/components/ui/Empty";
 import { Card } from "@/components/ui/Card";
 import { MasterPlanViewer } from "@/components/community/MasterPlanViewer";
+import { MarketPanel } from "@/components/community/MarketPanel";
 import { AssetUploader } from "@/components/community/AssetUploader";
 import { DocumentShelf, type DocView } from "@/components/community/DocumentShelf";
 import { NotConfigured } from "@/components/community/NotConfigured";
@@ -151,6 +152,11 @@ export default async function CommunityPage({
             emptyHint="Content-grade narrative — character, lifestyle, what it's known for."
           />
         </div>
+      </Section>
+
+      {/* Market — DLD transactions */}
+      <Section eyebrow="Market · DLD" title="Transactions (last 6 months)">
+        <MarketPanel snapshots={c.market_snapshots ?? []} />
       </Section>
 
       {/* Who it's for — client-tailored */}

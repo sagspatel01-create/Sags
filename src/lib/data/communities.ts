@@ -26,6 +26,22 @@ export interface SubCommunityWithChildren extends SubCommunity {
   unit_archetypes: UnitArchetype[];
 }
 
+export interface MarketSnapshot {
+  id: string;
+  unit_type: string | null;
+  reg_type: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  txn_count: number | null;
+  avg_price: number | null;
+  median_price: number | null;
+  avg_price_per_sqft: number | null;
+  min_price: number | null;
+  max_price: number | null;
+  source: string;
+  as_of: string;
+}
+
 export interface CommunityDetail extends Community {
   developer: Developer | null;
   sub_communities: SubCommunityWithChildren[];
@@ -33,6 +49,7 @@ export interface CommunityDetail extends Community {
   plan_assets: PlanAssetWithHotspots[];
   commute_times: CommuteTime[];
   payment_plans: PaymentPlan[];
+  market_snapshots: MarketSnapshot[];
 }
 
 /** Full catalogue for the /communities index. */
@@ -62,7 +79,8 @@ export async function getCommunityBySlug(
        documents(*),
        plan_assets(*, plan_hotspots!plan_hotspots_plan_asset_id_fkey(*)),
        commute_times(*),
-       payment_plans(*)`,
+       payment_plans(*),
+       market_snapshots(*)`,
     )
     .eq("slug", slug)
     .maybeSingle();
