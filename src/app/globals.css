@@ -78,8 +78,44 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-feature-settings: "cv05" 1, "ss01" 1;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Premium page ground — near-black with two very faint, warm light
+   sources so large dark surfaces read as depth, not flat ink. Fixed so
+   it doesn't scroll. Deliberately low-contrast; it should be felt, not
+   seen. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 82% -10%, color-mix(in srgb, var(--accent-500) 9%, transparent), transparent 55%),
+    radial-gradient(90% 70% at -10% 8%, color-mix(in srgb, var(--status-mixed) 6%, transparent), transparent 50%);
+}
+/* Keep the app content above the ground layer. */
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Numerals: prices, areas and metrics line up in columns. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Accessible, on-brand focus ring across every interactive element. */
+:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--ink-900),
+    0 0 0 3.5px color-mix(in srgb, var(--accent-400) 70%, transparent);
+  border-radius: 0.4rem;
 }
 
 /* Editorial helpers */
@@ -258,15 +294,48 @@ body {
 }
 .btn-primary {
   border-radius: 0.5rem;
-  background: var(--accent-500);
+  background: linear-gradient(180deg, var(--accent-400), var(--accent-500));
   padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--ink-900);
-  transition: background 0.15s ease;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #1a1408;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent),
+    0 1px 2px color-mix(in srgb, var(--ink-900) 60%, transparent);
+  transition:
+    filter 0.15s ease,
+    transform 0.05s ease,
+    box-shadow 0.15s ease;
 }
 .btn-primary:hover {
-  background: var(--accent-400);
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 28%, transparent),
+    0 4px 16px color-mix(in srgb, var(--accent-500) 30%, transparent);
+}
+.btn-primary:active {
+  transform: translateY(0.5px);
+}
+
+/* Elevated editorial surface — hairline + a soft, low shadow + a barely
+   perceptible top highlight so panels sit above the page ground. */
+.elevate {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--paper-100) 4%, transparent),
+    0 1px 1px color-mix(in srgb, var(--ink-900) 50%, transparent),
+    0 12px 32px -18px color-mix(in srgb, #000 90%, transparent);
+}
+
+/* Thin gold rule for section dividers / accents. */
+.gold-rule {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent-500) 55%, transparent),
+    transparent
+  );
 }
 
 /* MapLibre control chrome — quiet it down to match the editorial theme. */

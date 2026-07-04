@@ -15,7 +15,7 @@ export function ComparisonTable({ model }: { model: CompareModel }) {
   const colCount = columns.length;
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-ink-500">
+    <div className="elevate overflow-x-auto rounded-xl border border-ink-500">
       <table className="w-full border-separate border-spacing-0 text-sm">
         <thead>
           <tr>
@@ -100,19 +100,21 @@ function GroupRows({
       </tr>
 
       {group.rows.map((r, ri) => (
-        <tr key={ri} className="align-top">
-          <th className="sticky left-0 z-10 border-b border-r border-ink-500 bg-ink-900 px-4 py-3 text-left text-xs font-normal text-paper-500">
+        <tr key={ri} className="group/row align-top">
+          <th className="sticky left-0 z-10 border-b border-r border-ink-500 bg-ink-900 px-4 py-3 text-left text-xs font-normal text-paper-500 transition-colors group-hover/row:text-paper-300">
             {r.label}
           </th>
           {r.cells.map((cell, ci) => (
             <td
               key={ci}
-              className="border-b border-r border-ink-500 px-4 py-3 text-paper-200 last:border-r-0"
+              className={`border-b border-r border-ink-500 px-4 py-3 text-paper-200 transition-colors last:border-r-0 group-hover/row:bg-ink-800/40 ${
+                r.kind === "para" ? "" : "tnum"
+              }`}
             >
               {cell === null || cell === undefined || cell === "" ? (
                 <Empty />
               ) : r.kind === "para" ? (
-                <p className="max-w-[40ch] whitespace-pre-line text-sm leading-relaxed text-paper-300">
+                <p className="max-w-[42ch] whitespace-pre-line text-sm leading-relaxed text-paper-300">
                   {cell}
                 </p>
               ) : (
