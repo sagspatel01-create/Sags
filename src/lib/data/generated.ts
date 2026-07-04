@@ -41,3 +41,33 @@ export async function getTailoredCopy(
   if (error || !data) return null;
   return data as GeneratedContent;
 }
+
+/**
+ * Latest saved comparison brief matching the exact set of community slugs for
+ * the active profile (or a null profile). Subject sets are stored sorted.
+ */
+export async function getComparisonReport(
+  profileId: string | null,
+  slugs: string[],
+): Promise<GeneratedContent | null> {
+  const supabase = await createClient();
+  if (!supabase) return null;
+  const wanted = JSON.stringify([...slugs].sort());
+
+  let query = supabase
+    .from("generated_content")
+    .select("*")
+    .eq("content_type", "comparison_report")
+    .order("created_at", { ascending: false })
+    .limit(20);
+  query = profileId
+    ? query.eq("client_profile_id", profileId)
+    : query.is("client_profile_id", null);
+
+  const { data, error } = await query;
+  if (error || !data) return null;
+  const match = (data as GeneratedContent[]).find(
+    (r) => JSON.stringify((r.subject_ids as string[]) ?? []) === wanted,
+  );
+  return match ?? null;
+}

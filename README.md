@@ -112,3 +112,10 @@ supabase/
   field (config-driven — new filters via `filter_definitions` / `FILTER_CONFIG`
   without re-architecting), unknown-friendly market filters, budget→tier
   fallback, client-fit scoring + "Match to client", and an add-to-compare tray.
+- **M7 — Comparison brief**: a "Generate client-ready comparison" action on the
+  compare view that **streams** a tailored buy-side brief live (Anthropic),
+  grounded in the compared data + active client profile, then persists it for
+  editing. Editable prompt template in `src/lib/compare-report.ts`.
+
+Phase 1 is complete. Wire Supabase + `ANTHROPIC_API_KEY` (+ optional Google
+Maps key) and deploy to Vercel to run it live.

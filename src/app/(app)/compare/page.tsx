@@ -3,8 +3,10 @@ import { getCommunities } from "@/lib/data/communities";
 import { getCommunitiesForCompare } from "@/lib/data/compare";
 import { getActiveProfile } from "@/lib/client-profile.server";
 import { buildCompareModel } from "@/lib/compare-model";
+import { getComparisonReport } from "@/lib/data/generated";
 import { ComparePicker, type PickerOption } from "@/components/compare/ComparePicker";
 import { ComparisonTable } from "@/components/compare/ComparisonTable";
+import { CompareReport } from "@/components/compare/CompareReport";
 import { NotConfigured } from "@/components/community/NotConfigured";
 import { Card } from "@/components/ui/Card";
 import { TIER_LABEL } from "@/lib/format";
@@ -42,6 +44,18 @@ export default async function ComparePage({
 
   const model =
     selected.length >= 2 ? buildCompareModel(selected, profile) : null;
+
+  const reportRow =
+    selected.length >= 2
+      ? await getComparisonReport(profile?.id ?? null, slugs)
+      : null;
+  const report = reportRow?.body
+    ? {
+        id: reportRow.id,
+        body: reportRow.body,
+        is_owner_edited: reportRow.is_owner_edited,
+      }
+    : null;
 
   const topPriorities =
     profile &&
@@ -86,6 +100,17 @@ export default async function ComparePage({
       <div className="mt-6">
         <ComparePicker options={options} selected={slugs} />
       </div>
+
+      {model && (
+        <div className="mt-8">
+          <CompareReport
+            slugs={slugs}
+            initial={report}
+            hasProfile={Boolean(profile)}
+            sessionLabel={profile?.session_label ?? null}
+          />
+        </div>
+      )}
 
       <div className="mt-8">
         {model ? (
