@@ -2,6 +2,7 @@ import Link from "next/link";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getActiveProfile } from "@/lib/client-profile.server";
 import { getCommunities } from "@/lib/data/communities";
+import { getCommunityPricing } from "@/lib/data/pricing";
 import { clearProfile } from "./actions";
 import { IntakeForm } from "@/components/client/IntakeForm";
 import { Card, Eyebrow } from "@/components/ui/Card";
@@ -22,11 +23,23 @@ export default async function ClientPage() {
   const communities = configured ? await getCommunities() : [];
 
   const inReachTiers = active ? tiersForBudget(active.budget) : [];
+  const pricing = configured ? await getCommunityPricing() : new Map();
+  const budget = active?.budget ?? null;
   const matches = communities
     .filter(
       (c) => c.positioning_tier && inReachTiers.includes(c.positioning_tier),
     )
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .map((c) => {
+      const p = pricing.get(c.id);
+      const inBudget = Boolean(p && budget && p.from <= budget);
+      return { c, p, inBudget };
+    })
+    // Concrete in-budget matches first, then priced, then the rest.
+    .sort((a, b) => {
+      if (a.inBudget !== b.inBudget) return a.inBudget ? -1 : 1;
+      if (Boolean(a.p) !== Boolean(b.p)) return a.p ? -1 : 1;
+      return a.c.name.localeCompare(b.c.name);
+    });
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12 md:px-10">
@@ -111,9 +124,10 @@ export default async function ClientPage() {
               Achievable communities
             </h3>
             <p className="mt-1 text-sm text-paper-500">
-              Indicative fit by positioning tier
-              {active.budget ? ` for ${aed(active.budget)}` : ""} — a guide until
-              live price data lands in Phase 2, not a price guarantee.
+              Fit by positioning tier
+              {active.budget ? ` for ${aed(active.budget)}` : ""} — communities
+              with real entry pricing show “from” and rank first; the rest are
+              tier-band guides, not price guarantees.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {inReachTiers.length === 0 ? (
@@ -142,11 +156,15 @@ export default async function ClientPage() {
               </p>
             ) : (
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {matches.slice(0, 12).map((c) => (
+                {matches.slice(0, 12).map(({ c, p, inBudget }) => (
                   <Link
                     key={c.id}
                     href={`/communities/${c.slug}`}
-                    className="group rounded-xl border border-ink-500 bg-ink-800/50 p-4 transition-colors hover:bg-ink-700"
+                    className={`group rounded-xl border bg-ink-800/50 p-4 transition-colors hover:bg-ink-700 ${
+                      inBudget
+                        ? "border-accent-500/50"
+                        : "border-ink-500"
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-display text-base leading-tight text-paper-100 group-hover:text-white">
@@ -158,6 +176,28 @@ export default async function ClientPage() {
                       {c.developer?.name ?? "—"} ·{" "}
                       {c.positioning_tier ? TIER_LABEL[c.positioning_tier] : "—"}
                     </p>
+                    {p ? (
+                      <div className="mt-3 flex items-center justify-between gap-2 border-t border-ink-600 pt-2.5">
+                        <span className="tnum text-sm text-paper-100">
+                          from {aed(p.from)}
+                          {p.beds.length > 0 && (
+                            <span className="text-paper-500">
+                              {" "}· {p.beds[0]}
+                              {p.beds.length > 1 ? `–${p.beds[p.beds.length - 1]}` : ""}BR
+                            </span>
+                          )}
+                        </span>
+                        {inBudget && (
+                          <span className="shrink-0 rounded-full border border-accent-500/50 bg-accent-500/10 px-2 py-0.5 text-[0.5625rem] uppercase tracking-wider text-accent-400">
+                            In budget
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="mt-3 border-t border-ink-600 pt-2.5 text-xs text-paper-700">
+                        Pricing on request
+                      </p>
+                    )}
                   </Link>
                 ))}
               </div>
