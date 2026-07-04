@@ -1,4 +1,10 @@
 -- =====================================================================
+-- setup_from_0003.sql — idempotent finish-setup (migrations 0003-0011
+-- + seeds). Use ONLY if 0001/0002 are already applied. Otherwise paste
+-- setup.sql (the full, one-paste script). Safe to re-run.
+-- =====================================================================
+
+-- =====================================================================
 -- FINISH SETUP — run AFTER 0001+0002 are already applied.
 -- (Claude applied 0001 enums + 0002 core tables via MCP; this file
 --  completes the schema 0003-0011 and loads all seeds.)
@@ -17,7 +23,7 @@
 -- Transactions (DLD backbone). Active views use the trailing 6 months;
 -- older rows retained for trend lines.
 -- ---------------------------------------------------------------------
-create table transactions (
+create table if not exists transactions (
   id                  uuid primary key default gen_random_uuid(),
   sub_community_id    uuid not null references sub_communities(id) on delete cascade,
   phase_id            uuid references phases(id) on delete set null,
@@ -30,13 +36,13 @@ create table transactions (
   source              text,                    -- e.g. 'dld', 'dxb_interact'
   created_at          timestamptz not null default now()
 );
-create index transactions_sub_community_idx on transactions(sub_community_id);
-create index transactions_date_idx on transactions(transaction_date desc);
+create index if not exists transactions_sub_community_idx on transactions(sub_community_id);
+create index if not exists transactions_date_idx on transactions(transaction_date desc);
 
 -- ---------------------------------------------------------------------
 -- Listings (Bayut / PF live listings — the checkout / last step).
 -- ---------------------------------------------------------------------
-create table listings (
+create table if not exists listings (
   id                  uuid primary key default gen_random_uuid(),
   sub_community_id    uuid not null references sub_communities(id) on delete cascade,
   phase_id            uuid references phases(id) on delete set null,
@@ -54,12 +60,12 @@ create table listings (
   url                 text,
   created_at          timestamptz not null default now()
 );
-create index listings_sub_community_idx on listings(sub_community_id);
+create index if not exists listings_sub_community_idx on listings(sub_community_id);
 
 -- ---------------------------------------------------------------------
 -- Weekly price history (trend lines; feeds the trailing-6-month read).
 -- ---------------------------------------------------------------------
-create table price_history (
+create table if not exists price_history (
   id                  uuid primary key default gen_random_uuid(),
   sub_community_id    uuid not null references sub_communities(id) on delete cascade,
   unit_type           unit_type,
@@ -69,13 +75,13 @@ create table price_history (
   transaction_count   integer,
   created_at          timestamptz not null default now()
 );
-create index price_history_sub_community_idx on price_history(sub_community_id);
-create index price_history_week_idx on price_history(week_start_date desc);
+create index if not exists price_history_sub_community_idx on price_history(sub_community_id);
+create index if not exists price_history_week_idx on price_history(week_start_date desc);
 
 -- ---------------------------------------------------------------------
 -- Capital growth (appreciation over a named period).
 -- ---------------------------------------------------------------------
-create table capital_growth (
+create table if not exists capital_growth (
   id                  uuid primary key default gen_random_uuid(),
   sub_community_id    uuid not null references sub_communities(id) on delete cascade,
   unit_type           unit_type,
@@ -83,12 +89,12 @@ create table capital_growth (
   pct_change          numeric(8,2),
   calculated_at       timestamptz not null default now()
 );
-create index capital_growth_sub_community_idx on capital_growth(sub_community_id);
+create index if not exists capital_growth_sub_community_idx on capital_growth(sub_community_id);
 
 -- ---------------------------------------------------------------------
 -- Rental data (yield). Ready-community story.
 -- ---------------------------------------------------------------------
-create table rental_data (
+create table if not exists rental_data (
   id                  uuid primary key default gen_random_uuid(),
   sub_community_id    uuid not null references sub_communities(id) on delete cascade,
   unit_type           unit_type,
@@ -98,15 +104,15 @@ create table rental_data (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
-create index rental_data_sub_community_idx on rental_data(sub_community_id);
-create trigger trg_rental_data_updated before update on rental_data
+create index if not exists rental_data_sub_community_idx on rental_data(sub_community_id);
+create or replace trigger trg_rental_data_updated before update on rental_data
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------
 -- Absorption (offplan momentum — units released vs sold, velocity,
 -- launch-to-launch price movement). Numbers-based and active.
 -- ---------------------------------------------------------------------
-create table absorption (
+create table if not exists absorption (
   id                    uuid primary key default gen_random_uuid(),
   sub_community_id      uuid not null references sub_communities(id) on delete cascade,
   phase_name            text,
@@ -118,12 +124,12 @@ create table absorption (
   as_of_date            date,
   created_at            timestamptz not null default now()
 );
-create index absorption_sub_community_idx on absorption(sub_community_id);
+create index if not exists absorption_sub_community_idx on absorption(sub_community_id);
 
 -- ---------------------------------------------------------------------
 -- Payment plans (offplan financing — the headline persuasion tool).
 -- ---------------------------------------------------------------------
-create table payment_plans (
+create table if not exists payment_plans (
   id                  uuid primary key default gen_random_uuid(),
   community_id        uuid not null references communities(id) on delete cascade,
   plan_type           text,                    -- e.g. '40/60', '60/40'
@@ -134,8 +140,8 @@ create table payment_plans (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
-create index payment_plans_community_idx on payment_plans(community_id);
-create trigger trg_payment_plans_updated before update on payment_plans
+create index if not exists payment_plans_community_idx on payment_plans(community_id);
+create or replace trigger trg_payment_plans_updated before update on payment_plans
   for each row execute function set_updated_at();
 
 -- >>>>> migration 0004
@@ -149,7 +155,7 @@ create trigger trg_payment_plans_updated before update on payment_plans
 -- Schools (KHDA). Standalone geo entities; matched to communities by
 -- proximity at query time (Phase 2 pipeline).
 -- ---------------------------------------------------------------------
-create table schools (
+create table if not exists schools (
   id                  uuid primary key default gen_random_uuid(),
   name                text not null,
   geo_point           geography(Point, 4326),
@@ -160,26 +166,26 @@ create table schools (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
-create index schools_geo_idx on schools using gist(geo_point);
-create trigger trg_schools_updated before update on schools
+create index if not exists schools_geo_idx on schools using gist(geo_point);
+create or replace trigger trg_schools_updated before update on schools
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------
 -- Amenities (malls, hospitals, parks, POIs).
 -- ---------------------------------------------------------------------
-create table amenities (
+create table if not exists amenities (
   id                  uuid primary key default gen_random_uuid(),
   name                text not null,
   category            text,                     -- 'mall' | 'hospital' | 'park' | ...
   geo_point           geography(Point, 4326),
   created_at          timestamptz not null default now()
 );
-create index amenities_geo_idx on amenities using gist(geo_point);
+create index if not exists amenities_geo_idx on amenities using gist(geo_point);
 
 -- ---------------------------------------------------------------------
 -- Commute times (community → key hub, driving minutes).
 -- ---------------------------------------------------------------------
-create table commute_times (
+create table if not exists commute_times (
   id                  uuid primary key default gen_random_uuid(),
   community_id        uuid not null references communities(id) on delete cascade,
   destination_name    text not null,            -- 'DIFC', 'DXB Airport', 'Dubai Mall'
@@ -187,15 +193,15 @@ create table commute_times (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
-create index commute_times_community_idx on commute_times(community_id);
-create trigger trg_commute_times_updated before update on commute_times
+create index if not exists commute_times_community_idx on commute_times(community_id);
+create or replace trigger trg_commute_times_updated before update on commute_times
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------
 -- Infrastructure projects (government spend / master-plan catalysts —
 -- the value-driver story).
 -- ---------------------------------------------------------------------
-create table infrastructure_projects (
+create table if not exists infrastructure_projects (
   id                  uuid primary key default gen_random_uuid(),
   name                text not null,
   description         text,
@@ -206,15 +212,15 @@ create table infrastructure_projects (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
-create index infrastructure_projects_geo_idx on infrastructure_projects using gist(geo_point);
-create trigger trg_infrastructure_projects_updated before update on infrastructure_projects
+create index if not exists infrastructure_projects_geo_idx on infrastructure_projects using gist(geo_point);
+create or replace trigger trg_infrastructure_projects_updated before update on infrastructure_projects
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------
 -- Documents (brochures, master plans) attached to a community or
 -- sub-community. Stored in Supabase Storage; row keeps the reference.
 -- ---------------------------------------------------------------------
-create table documents (
+create table if not exists documents (
   id                  uuid primary key default gen_random_uuid(),
   community_id        uuid references communities(id) on delete cascade,
   sub_community_id    uuid references sub_communities(id) on delete cascade,
@@ -223,8 +229,8 @@ create table documents (
   doc_type            text,                     -- 'brochure' | 'master_plan' | 'floorplan'
   created_at          timestamptz not null default now()
 );
-create index documents_community_idx on documents(community_id);
-create index documents_sub_community_idx on documents(sub_community_id);
+create index if not exists documents_community_idx on documents(community_id);
+create index if not exists documents_sub_community_idx on documents(sub_community_id);
 
 -- >>>>> migration 0005
 
@@ -237,7 +243,7 @@ create index documents_sub_community_idx on documents(sub_community_id);
 -- Client profiles — entered at session start; drive the tailored
 -- experience (descriptions, emphasis, recommendation language).
 -- ---------------------------------------------------------------------
-create table client_profiles (
+create table if not exists client_profiles (
   id                  uuid primary key default gen_random_uuid(),
   session_label       text,                     -- owner's label for the call
   budget              numeric(14,2),
@@ -249,7 +255,7 @@ create table client_profiles (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
-create trigger trg_client_profiles_updated before update on client_profiles
+create or replace trigger trg_client_profiles_updated before update on client_profiles
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------
@@ -257,7 +263,7 @@ create trigger trg_client_profiles_updated before update on client_profiles
 -- is a row here so one breaking never takes the app down. Phase 1 does
 -- NOT run ingestion; this records what exists and its health/cadence.
 -- ---------------------------------------------------------------------
-create table data_sources (
+create table if not exists data_sources (
   id                  uuid primary key default gen_random_uuid(),
   key                 text not null unique,     -- 'dld' | 'bayut' | 'property_finder' | 'khda' | 'google_maps'
   label               text not null,
@@ -271,7 +277,7 @@ create table data_sources (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
-create trigger trg_data_sources_updated before update on data_sources
+create or replace trigger trg_data_sources_updated before update on data_sources
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------
@@ -279,7 +285,7 @@ create trigger trg_data_sources_updated before update on data_sources
 -- can be added without re-architecting (Milestone 6). Each row = one
 -- filter; the UI renders from these.
 -- ---------------------------------------------------------------------
-create table filter_definitions (
+create table if not exists filter_definitions (
   id                  uuid primary key default gen_random_uuid(),
   key                 text not null unique,     -- 'budget', 'unit_type', 'kitchen_type', ...
   label               text not null,
@@ -298,7 +304,7 @@ create table filter_definitions (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
-create trigger trg_filter_definitions_updated before update on filter_definitions
+create or replace trigger trg_filter_definitions_updated before update on filter_definitions
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------
@@ -307,7 +313,7 @@ create trigger trg_filter_definitions_updated before update on filter_definition
 -- target entity so tailored copy persists across the session and can be
 -- overridden by the owner.
 -- ---------------------------------------------------------------------
-create table generated_content (
+create table if not exists generated_content (
   id                  uuid primary key default gen_random_uuid(),
   content_type        text not null,            -- 'who_its_for' | 'comparison_report' | 'exit_one_pager' | 'social_script'
   client_profile_id   uuid references client_profiles(id) on delete cascade,
@@ -321,9 +327,9 @@ create table generated_content (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
-create index generated_content_profile_idx on generated_content(client_profile_id);
-create index generated_content_sub_community_idx on generated_content(sub_community_id);
-create trigger trg_generated_content_updated before update on generated_content
+create index if not exists generated_content_profile_idx on generated_content(client_profile_id);
+create index if not exists generated_content_sub_community_idx on generated_content(sub_community_id);
+create or replace trigger trg_generated_content_updated before update on generated_content
   for each row execute function set_updated_at();
 
 -- >>>>> migration 0006
@@ -350,6 +356,7 @@ begin
     execute format('alter table %I enable row level security;', t);
 
     -- Read + write for any authenticated user (the single owner).
+    execute format('drop policy if exists "authenticated_all_%1$s" on %1$I;', t, t);
     execute format($f$
       create policy "authenticated_all_%1$s" on %1$I
         for all
@@ -449,19 +456,28 @@ as
 -- natural dimensions, and the hotspot geometry (percent coordinates).
 -- =====================================================================
 
-create type plan_kind as enum (
+do $$ begin
+  create type plan_kind as enum (
   'master_plan', 'site_plan', 'floor_plan', 'brochure', 'gallery', 'other'
 );
-create type hotspot_shape as enum ('point', 'rect', 'polygon');
-create type hotspot_target as enum (
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  create type hotspot_shape as enum ('point', 'rect', 'polygon');
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  create type hotspot_target as enum (
   'community', 'sub_community', 'phase', 'unit_archetype', 'plan_asset', 'url'
 );
+exception when duplicate_object then null;
+end $$;
 
 -- ---------------------------------------------------------------------
 -- Plan assets — one image (master plan, site plan, floor plan, …) that
 -- can belong to a community, sub-community, phase, or unit archetype.
 -- ---------------------------------------------------------------------
-create table plan_assets (
+create table if not exists plan_assets (
   id                  uuid primary key default gen_random_uuid(),
   community_id        uuid references communities(id) on delete cascade,
   sub_community_id    uuid references sub_communities(id) on delete cascade,
@@ -478,18 +494,18 @@ create table plan_assets (
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
-create index plan_assets_community_idx on plan_assets(community_id);
-create index plan_assets_sub_community_idx on plan_assets(sub_community_id);
-create index plan_assets_phase_idx on plan_assets(phase_id);
-create index plan_assets_unit_idx on plan_assets(unit_archetype_id);
-create trigger trg_plan_assets_updated before update on plan_assets
+create index if not exists plan_assets_community_idx on plan_assets(community_id);
+create index if not exists plan_assets_sub_community_idx on plan_assets(sub_community_id);
+create index if not exists plan_assets_phase_idx on plan_assets(phase_id);
+create index if not exists plan_assets_unit_idx on plan_assets(unit_archetype_id);
+create or replace trigger trg_plan_assets_updated before update on plan_assets
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------
 -- Hotspots — clickable regions on a plan asset. coords are percentages
 -- (0-100) of the image: point {x,y}; rect {x,y,w,h}; polygon {points}.
 -- ---------------------------------------------------------------------
-create table plan_hotspots (
+create table if not exists plan_hotspots (
   id                        uuid primary key default gen_random_uuid(),
   plan_asset_id             uuid not null references plan_assets(id) on delete cascade,
   label                     text,
@@ -511,8 +527,8 @@ create table plan_hotspots (
   created_at                timestamptz not null default now(),
   updated_at                timestamptz not null default now()
 );
-create index plan_hotspots_asset_idx on plan_hotspots(plan_asset_id);
-create trigger trg_plan_hotspots_updated before update on plan_hotspots
+create index if not exists plan_hotspots_asset_idx on plan_hotspots(plan_asset_id);
+create or replace trigger trg_plan_hotspots_updated before update on plan_hotspots
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------
@@ -521,8 +537,10 @@ create trigger trg_plan_hotspots_updated before update on plan_hotspots
 alter table plan_assets enable row level security;
 alter table plan_hotspots enable row level security;
 
+drop policy if exists "authenticated_all_plan_assets" on plan_assets;
 create policy "authenticated_all_plan_assets" on plan_assets
   for all to authenticated using (true) with check (true);
+drop policy if exists "authenticated_all_plan_hotspots" on plan_hotspots;
 create policy "authenticated_all_plan_hotspots" on plan_hotspots
   for all to authenticated using (true) with check (true);
 
