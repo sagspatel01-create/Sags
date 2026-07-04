@@ -60,7 +60,7 @@ export async function getCommunityBySlug(
        developer:developers(*),
        sub_communities(*, phases(*), unit_archetypes(*)),
        documents(*),
-       plan_assets(*, plan_hotspots(*)),
+       plan_assets(*, plan_hotspots!plan_hotspots_plan_asset_id_fkey(*)),
        commute_times(*),
        payment_plans(*)`,
     )
@@ -123,7 +123,7 @@ export async function getSubCommunity(
        phases(*),
        unit_archetypes(*),
        documents(*),
-       plan_assets(*, plan_hotspots(*))`,
+       plan_assets(*, plan_hotspots!plan_hotspots_plan_asset_id_fkey(*))`,
     )
     .eq("community_id", community.id)
     .eq("slug", subSlug)

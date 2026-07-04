@@ -593,6 +593,18 @@ alter table communities
 create index if not exists communities_character_tags_idx
   on communities using gin (character_tags);
 
+-- =====================================================================
+-- >>>>> supabase/migrations/0012_grants.sql
+-- =====================================================================
+-- RLS governs which ROWS the API roles see; Postgres still needs
+-- table-level GRANTs. Runs after every table/view exists. Idempotent.
+grant usage on schema public to anon, authenticated;
+grant all on all tables in schema public to anon, authenticated;
+grant all on all sequences in schema public to anon, authenticated;
+alter default privileges in schema public grant all on tables to anon, authenticated;
+alter default privileges in schema public grant all on sequences to anon, authenticated;
+
+
 -- >>>>> seed.sql
 
 -- =====================================================================
