@@ -78,6 +78,29 @@ export interface SubCommunityDetail extends SubCommunity {
   plan_assets: PlanAssetWithHotspots[];
 }
 
+export interface SubCommunityAdmin extends SubCommunity {
+  community: Pick<Community, "id" | "name" | "slug"> | null;
+  phases: Phase[];
+  unit_archetypes: UnitArchetype[];
+}
+
+/** Fetch a sub-community by id with its phases + unit archetypes (admin). */
+export async function getSubCommunityById(
+  id: string,
+): Promise<SubCommunityAdmin | null> {
+  const supabase = await createClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("sub_communities")
+    .select(
+      `*, community:communities(id,name,slug), phases(*), unit_archetypes(*)`,
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as unknown as SubCommunityAdmin;
+}
+
 export async function getSubCommunity(
   communitySlug: string,
   subSlug: string,
