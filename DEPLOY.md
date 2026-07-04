@@ -8,9 +8,11 @@ accounts (they require your login, which I can't do for you). ~15 minutes.
 1. Open your project → **SQL Editor** → New query.
 2. Paste the entire contents of [`supabase/setup.sql`](supabase/setup.sql) and
    **Run**. This applies all migrations (0001–0011) and loads the seeds
-   (breadth catalogue, Dubai Hills content, character tags).
-   - If you re-run it later, a few `CREATE TYPE/TABLE already exists` errors are
-     expected and harmless — the seeds are idempotent.
+   (breadth catalogue — 64 communities, Dubai Hills content, character tags).
+   - **Fully idempotent.** Safe to paste and run in one go, as many times as
+     you like, on a fresh **or** partially-applied project — no "already
+     exists" errors, nothing gets dropped. (Verified end-to-end on
+     Postgres 16 + PostGIS.)
 3. **Storage**: the paste creates the private `assets` bucket. If your role
    couldn't touch `storage`, create it manually: Storage → New bucket →
    name `assets`, **not public**.
