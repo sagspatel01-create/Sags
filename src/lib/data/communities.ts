@@ -51,6 +51,7 @@ export interface CommunityDetail extends Community {
   payment_plans: PaymentPlan[];
   market_snapshots: MarketSnapshot[];
   faqs: { q: string; a: string }[] | null;
+  catalysts: { title: string; category: string; timeline: string; note: string }[] | null;
 }
 
 /** Full catalogue for the /communities index. */

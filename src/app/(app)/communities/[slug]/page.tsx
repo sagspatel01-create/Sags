@@ -14,6 +14,7 @@ import { Empty } from "@/components/ui/Empty";
 import { Card } from "@/components/ui/Card";
 import { MasterPlanViewer } from "@/components/community/MasterPlanViewer";
 import { MarketPanel } from "@/components/community/MarketPanel";
+import { CatalystsPanel } from "@/components/community/CatalystsPanel";
 import { AssetUploader } from "@/components/community/AssetUploader";
 import { DocumentShelf, type DocView } from "@/components/community/DocumentShelf";
 import { NotConfigured } from "@/components/community/NotConfigured";
@@ -153,6 +154,21 @@ export default async function CommunityPage({
           />
         </div>
       </Section>
+
+      {/* Area Intelligence — the USP */}
+      {Array.isArray(c.catalysts) && c.catalysts.length > 0 && (
+        <Section
+          eyebrow="Area intelligence · the edge"
+          title="What's driving value here"
+        >
+          <p className="mb-4 max-w-2xl text-sm text-paper-500">
+            The roads, transport, schools and government projects in and around
+            {" "}{c.name} — the &ldquo;why behind the price&rdquo; that listing
+            portals don&apos;t show.
+          </p>
+          <CatalystsPanel catalysts={c.catalysts} />
+        </Section>
+      )}
 
       {/* Market — DLD transactions */}
       <Section eyebrow="Market · DLD" title="Transactions (last 6 months)">

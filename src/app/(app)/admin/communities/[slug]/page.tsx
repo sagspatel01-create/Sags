@@ -5,6 +5,7 @@ import { getCommunityBySlug } from "@/lib/data/communities";
 import { updateCommunity } from "@/app/actions/admin";
 import { NotConfigured } from "@/components/community/NotConfigured";
 import { FaqEditor } from "@/components/admin/FaqEditor";
+import { CatalystsEditor } from "@/components/admin/CatalystsEditor";
 import {
   Field,
   Textarea,
@@ -67,6 +68,14 @@ export default async function AdminCommunity({
         <Checkbox label="Still a skeleton (mark off once depth is filled)" name="is_placeholder" defaultChecked={c.is_placeholder} />
         <SaveBar />
       </form>
+
+      <div className="mt-12">
+        <p className="text-eyebrow">Area intelligence · growth catalysts</p>
+        <CatalystsEditor
+          slug={c.slug}
+          initial={Array.isArray((c as { catalysts?: { title: string; category: string; timeline: string; note: string }[] }).catalysts) ? (c as { catalysts?: { title: string; category: string; timeline: string; note: string }[] }).catalysts! : []}
+        />
+      </div>
 
       <div className="mt-12">
         <p className="text-eyebrow">Area-guide FAQs</p>
