@@ -263,6 +263,23 @@ export default async function CommunityPage({
         </p>
       </Section>
 
+      {/* FAQs */}
+      {Array.isArray(c.faqs) && c.faqs.length > 0 && (
+        <Section eyebrow="Good to know" title="Frequently asked">
+          <div className="divide-y divide-ink-500 overflow-hidden rounded-xl border border-ink-500">
+            {c.faqs.map((f, i) => (
+              <details key={i} className="group bg-ink-800/40 open:bg-ink-800/60">
+                <summary className="flex cursor-pointer items-center justify-between gap-4 px-5 py-4 text-paper-100 marker:content-['']">
+                  <span className="font-medium">{f.q}</span>
+                  <span className="shrink-0 text-paper-500 transition-transform group-open:rotate-45">+</span>
+                </summary>
+                <p className="px-5 pb-4 text-sm leading-relaxed text-paper-300">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </Section>
+      )}
+
       {/* Documents */}
       <Section eyebrow="Files" title="Documents & assets">
         <DocumentShelf

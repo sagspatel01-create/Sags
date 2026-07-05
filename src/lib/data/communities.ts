@@ -50,6 +50,7 @@ export interface CommunityDetail extends Community {
   commute_times: CommuteTime[];
   payment_plans: PaymentPlan[];
   market_snapshots: MarketSnapshot[];
+  faqs: { q: string; a: string }[] | null;
 }
 
 /** Full catalogue for the /communities index. */

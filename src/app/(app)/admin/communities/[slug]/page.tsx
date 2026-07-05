@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/env";
 import { getCommunityBySlug } from "@/lib/data/communities";
 import { updateCommunity } from "@/app/actions/admin";
 import { NotConfigured } from "@/components/community/NotConfigured";
+import { FaqEditor } from "@/components/admin/FaqEditor";
 import {
   Field,
   Textarea,
@@ -66,6 +67,14 @@ export default async function AdminCommunity({
         <Checkbox label="Still a skeleton (mark off once depth is filled)" name="is_placeholder" defaultChecked={c.is_placeholder} />
         <SaveBar />
       </form>
+
+      <div className="mt-12">
+        <p className="text-eyebrow">Area-guide FAQs</p>
+        <FaqEditor
+          slug={c.slug}
+          initial={Array.isArray((c as { faqs?: { q: string; a: string }[] }).faqs) ? (c as { faqs?: { q: string; a: string }[] }).faqs! : []}
+        />
+      </div>
 
       <div className="mt-12">
         <p className="text-eyebrow">Sub-communities</p>
