@@ -14,6 +14,7 @@ import { Empty } from "@/components/ui/Empty";
 import { Card } from "@/components/ui/Card";
 import { MasterPlanViewer } from "@/components/community/MasterPlanViewer";
 import { MarketPanel } from "@/components/community/MarketPanel";
+import { MarketTrends } from "@/components/community/MarketTrends";
 import { CatalystsPanel } from "@/components/community/CatalystsPanel";
 import { AssetUploader } from "@/components/community/AssetUploader";
 import { DocumentShelf, type DocView } from "@/components/community/DocumentShelf";
@@ -170,9 +171,18 @@ export default async function CommunityPage({
         </Section>
       )}
 
-      {/* Market — DLD transactions */}
-      <Section eyebrow="Market · DLD" title="Transactions (last 6 months)">
-        <MarketPanel snapshots={c.market_snapshots ?? []} />
+      {/* Market — DLD transactions. A single 'dld-detail' row carries the
+          full drill-down (interactive trends); the aggregate rows feed the
+          compact segment table as a fallback. */}
+      <Section eyebrow="Market · DLD" title="Transactions & trends (last 6 months)">
+        {(() => {
+          const all = c.market_snapshots ?? [];
+          const detail = all.find((s) => s.source === "dld-detail" && (s.sample_txns?.length ?? 0) > 0);
+          if (detail?.sample_txns?.length) {
+            return <MarketTrends txns={detail.sample_txns} asOf={detail.as_of} />;
+          }
+          return <MarketPanel snapshots={all.filter((s) => s.source !== "dld-detail")} />;
+        })()}
       </Section>
 
       {/* Who it's for — client-tailored */}

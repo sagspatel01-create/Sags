@@ -19,7 +19,8 @@ export interface DldRow {
   propertyType: string; // Unit / Villa / Building / Land
   propertySubType: string; // Villa / Townhouse / Flat …
   area: string; // area_name_en
-  project: string; // master_project_en / project_name_en
+  masterProject: string; // master_project_en (≈ community)
+  project: string; // project_name_en (≈ cluster) or master
   rooms: string; // rooms_en
   areaSqm: number | null; // procedure_area
   price: number | null; // actual_worth (AED)
@@ -33,7 +34,8 @@ const COL: Record<string, string[]> = {
   propertyType: ["property_type_en", "property_type"],
   propertySubType: ["property_sub_type_en", "property_subtype_en", "property_sub_type", "sub_type_en"],
   area: ["area_name_en", "area", "area_en"],
-  project: ["master_project_en", "project_name_en", "project_en", "project"],
+  masterProject: ["master_project_en", "master_project", "master_community"],
+  project: ["project_name_en", "project_en", "project"],
   rooms: ["rooms_en", "rooms", "bedrooms"],
   areaSqm: ["procedure_area", "area_sqm", "size_sqm", "property_size"],
   price: ["actual_worth", "amount", "price", "value", "trans_value"],
@@ -63,6 +65,7 @@ export function normalizeRow(rec: Record<string, string>): DldRow {
     propertyType: pick(rec, COL.propertyType),
     propertySubType: pick(rec, COL.propertySubType),
     area: pick(rec, COL.area),
+    masterProject: pick(rec, COL.masterProject),
     project: pick(rec, COL.project),
     rooms: pick(rec, COL.rooms),
     areaSqm: n(pick(rec, COL.areaSqm)),
@@ -132,7 +135,7 @@ export function aggregate(rows: DldRow[], monthsBack = 6): { snapshots: Snapshot
     if (!ut || !isSale(r) || !r.price) continue;
     const d = parseDate(r.date);
     if (!d || d < cutoff) continue;
-    const group = (r.project || r.area).trim();
+    const group = (r.masterProject || r.project || r.area).trim();
     if (!group) continue;
     considered++;
     const reg = regBucket(r);
@@ -200,4 +203,167 @@ export function matchCommunity(
     }
   }
   return best?.id ?? null;
+}
+
+/**
+ * Best-effort match of a DLD project (cluster) name to one of a community's
+ * sub-communities. Returns the sub-community NAME (for display) or null.
+ * We keep the label rather than an id: the compact txn payload only needs the
+ * human-readable cluster to power the "by cluster" filter.
+ */
+export function matchCluster(
+  project: string,
+  subs: { id: string; name: string; slug: string }[],
+): string | null {
+  const g = norm(project);
+  if (!g) return null;
+  for (const s of subs) if (norm(s.name) === g || norm(s.slug) === g) return s.name;
+  let best: { name: string; len: number } | null = null;
+  for (const s of subs) {
+    const sn = norm(s.name);
+    if (sn.length < 4) continue;
+    if (g.includes(sn) || sn.includes(g)) {
+      if (!best || sn.length > best.len) best = { name: s.name, len: sn.length };
+    }
+  }
+  return best?.name ?? null;
+}
+
+/** Parse a DLD rooms label ("4 B/R", "PENTHOUSE", "Studio") into a bed count. */
+export function parseBeds(rooms: string): number | null {
+  const s = rooms.toLowerCase().trim();
+  if (!s) return null;
+  if (s.includes("studio")) return 0;
+  const m = /(\d+)\s*(b\/?r|bed|br)?/.exec(s);
+  if (m) {
+    const b = Number(m[1]);
+    if (Number.isFinite(b) && b >= 0 && b <= 12) return b;
+  }
+  return null;
+}
+
+// ---- per-community transaction detail (Bayut-style drill-down) ----------
+
+/**
+ * A single transaction kept for the interactive drill-down, with short keys
+ * to keep the stored JSON payload small. Everything shown on the community
+ * Trends tab is derived from an array of these — client-side — so filtering
+ * by unit type, bedrooms and cluster stays instant and honest (real rows only).
+ */
+export interface TxnLite {
+  d: string; // ISO date (YYYY-MM-DD)
+  c: string | null; // cluster / sub-community label
+  b: number | null; // bedrooms
+  s: number | null; // BUA sqft
+  p: number; // price (AED)
+  pp: number | null; // price per sqft
+  u: "villa" | "townhouse";
+  r: "ready" | "offplan";
+}
+
+export interface TrendPoint {
+  month: string; // YYYY-MM
+  median_ppsf: number;
+  n: number;
+}
+
+export interface CommunityDetail {
+  community_id: string;
+  txns: TxnLite[]; // newest first, capped
+  trend: TrendPoint[]; // all-segments monthly median ppsf
+  appreciation_pct: number | null; // first vs last trend month
+  median_price: number;
+  median_ppsf: number | null;
+  txn_count: number;
+}
+
+const TXN_CAP = 1500; // safety cap on stored rows per community
+
+/** Build a compact monthly median-ppsf trend from a set of transactions. */
+function buildTrend(txns: TxnLite[]): { trend: TrendPoint[]; appreciation_pct: number | null } {
+  const byMonth = new Map<string, number[]>();
+  for (const t of txns) {
+    if (t.pp == null) continue;
+    const month = t.d.slice(0, 7);
+    (byMonth.get(month) ?? byMonth.set(month, []).get(month)!).push(t.pp);
+  }
+  const trend: TrendPoint[] = [...byMonth.entries()]
+    .map(([month, ppsf]) => ({ month, median_ppsf: Math.round(median(ppsf)), n: ppsf.length }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+  let appreciation_pct: number | null = null;
+  if (trend.length >= 2) {
+    const first = trend[0].median_ppsf;
+    const last = trend[trend.length - 1].median_ppsf;
+    if (first > 0) appreciation_pct = Math.round(((last - first) / first) * 1000) / 10;
+  }
+  return { trend, appreciation_pct };
+}
+
+/**
+ * Group DLD villa/townhouse sales (last `monthsBack` months) into one
+ * detail record per matched community: a capped, newest-first list of
+ * individual transactions (cluster + beds + size tagged) plus a precomputed
+ * all-segments trend. The community page filters/aggregates the txns
+ * client-side for the Bayut-style drill-down. Only real rows are kept.
+ */
+export function buildCommunityTxns(
+  rows: DldRow[],
+  communities: { id: string; name: string; slug: string }[],
+  subsByCommunity: Map<string, { id: string; name: string; slug: string }[]>,
+  monthsBack = 6,
+): { details: CommunityDetail[]; matched: number } {
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - monthsBack);
+
+  const byCommunity = new Map<string, TxnLite[]>();
+  let matched = 0;
+
+  for (const r of rows) {
+    const ut = isVillaOrTownhouse(r);
+    if (!ut || !isSale(r) || !r.price) continue;
+    const d = parseDate(r.date);
+    if (!d || d < cutoff) continue;
+    const group = (r.masterProject || r.project || r.area).trim();
+    if (!group) continue;
+    const cid = matchCommunity(group, communities);
+    if (!cid) continue;
+    matched++;
+    const ppsf = r.pricePerSqm
+      ? r.pricePerSqm / SQM_TO_SQFT
+      : r.areaSqm
+        ? r.price / (r.areaSqm * SQM_TO_SQFT)
+        : NaN;
+    const cluster = r.project ? matchCluster(r.project, subsByCommunity.get(cid) ?? []) : null;
+    const txn: TxnLite = {
+      d: d.toISOString().slice(0, 10),
+      c: cluster,
+      b: parseBeds(r.rooms),
+      s: r.areaSqm ? Math.round(r.areaSqm * SQM_TO_SQFT) : null,
+      p: Math.round(r.price),
+      pp: Number.isFinite(ppsf) && ppsf > 0 ? Math.round(ppsf) : null,
+      u: ut,
+      r: regBucket(r),
+    };
+    (byCommunity.get(cid) ?? byCommunity.set(cid, []).get(cid)!).push(txn);
+  }
+
+  const details: CommunityDetail[] = [];
+  for (const [community_id, all] of byCommunity) {
+    all.sort((a, b) => b.d.localeCompare(a.d)); // newest first
+    const txns = all.slice(0, TXN_CAP);
+    const { trend, appreciation_pct } = buildTrend(all);
+    const prices = all.map((t) => t.p);
+    const ppsfs = all.map((t) => t.pp).filter((x): x is number => x != null);
+    details.push({
+      community_id,
+      txns,
+      trend,
+      appreciation_pct,
+      median_price: Math.round(median(prices)),
+      median_ppsf: ppsfs.length ? Math.round(median(ppsfs)) : null,
+      txn_count: all.length,
+    });
+  }
+  details.sort((a, b) => b.txn_count - a.txn_count);
+  return { details, matched };
 }

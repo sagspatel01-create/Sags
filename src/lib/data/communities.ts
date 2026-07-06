@@ -26,6 +26,8 @@ export interface SubCommunityWithChildren extends SubCommunity {
   unit_archetypes: UnitArchetype[];
 }
 
+import type { TxnLite, TrendPoint } from "@/lib/sources/dld";
+
 export interface MarketSnapshot {
   id: string;
   unit_type: string | null;
@@ -40,6 +42,11 @@ export interface MarketSnapshot {
   max_price: number | null;
   source: string;
   as_of: string;
+  sub_community_id: string | null;
+  bedrooms: number | null;
+  trend: TrendPoint[] | null;
+  appreciation_pct: number | null;
+  sample_txns: TxnLite[] | null;
 }
 
 export interface CommunityDetail extends Community {
@@ -52,6 +59,19 @@ export interface CommunityDetail extends Community {
   market_snapshots: MarketSnapshot[];
   faqs: { q: string; a: string }[] | null;
   catalysts: { title: string; category: string; timeline: string; note: string }[] | null;
+}
+
+/** Flat list of sub-communities (id, name, slug, parent) for cluster matching. */
+export async function getSubCommunitiesLite(): Promise<
+  { id: string; name: string; slug: string; community_id: string }[]
+> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("sub_communities")
+    .select("id,name,slug,community_id");
+  if (error || !data) return [];
+  return data as unknown as { id: string; name: string; slug: string; community_id: string }[];
 }
 
 /** Full catalogue for the /communities index. */

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { isSupabaseConfigured } from "@/lib/env";
-import { getCommunities } from "@/lib/data/communities";
+import { getCommunities, getSubCommunitiesLite } from "@/lib/data/communities";
 import { DldImport } from "@/components/admin/DldImport";
 import { NotConfigured } from "@/components/community/NotConfigured";
 
@@ -8,7 +8,10 @@ export const dynamic = "force-dynamic";
 
 export default async function TransactionsImportPage() {
   if (!isSupabaseConfigured()) return <NotConfigured />;
-  const communities = await getCommunities();
+  const [communities, subs] = await Promise.all([
+    getCommunities(),
+    getSubCommunitiesLite(),
+  ]);
   const lite = communities.map((c) => ({ id: c.id, name: c.name, slug: c.slug }));
 
   return (
@@ -31,7 +34,7 @@ export default async function TransactionsImportPage() {
         Dubai Pulse API and it refreshes weekly.
       </p>
 
-      <DldImport communities={lite} />
+      <DldImport communities={lite} subs={subs} />
 
       <div className="mt-10 rounded-xl border border-ink-500 bg-ink-800/40 p-5 text-sm text-paper-500">
         <p className="text-eyebrow">Automate weekly (Dubai Pulse API)</p>

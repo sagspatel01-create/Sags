@@ -6,21 +6,26 @@ import {
   normalizeRow,
   aggregate,
   matchCommunity,
+  buildCommunityTxns,
   type DldRow,
   type Snapshot,
+  type CommunityDetail,
 } from "@/lib/sources/dld";
-import { applyMarketSnapshots, type ApplyMarketResult } from "@/app/actions/market";
+import { applyMarketSnapshots, applyMarketDetail, type ApplyMarketResult } from "@/app/actions/market";
 import { aed, num } from "@/lib/format";
 
 type Community = { id: string; name: string; slug: string };
+type Sub = { id: string; name: string; slug: string; community_id: string };
 
-export function DldImport({ communities }: { communities: Community[] }) {
+export function DldImport({ communities, subs = [] }: { communities: Community[]; subs?: Sub[] }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [phase, setPhase] = useState<"idle" | "parsing" | "review" | "saving" | "done">("idle");
   const [fileName, setFileName] = useState<string | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [details, setDetails] = useState<CommunityDetail[]>([]);
   const [considered, setConsidered] = useState(0);
   const [result, setResult] = useState<ApplyMarketResult | null>(null);
+  const [detailResult, setDetailResult] = useState<{ communities: number; transactions: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function parse(file: File) {
@@ -38,7 +43,15 @@ export function DldImport({ communities }: { communities: Community[] }) {
       },
       complete: () => {
         const { snapshots, considered } = aggregate(rows, 6);
+        const subsByCommunity = new Map<string, Sub[]>();
+        for (const s of subs) {
+          const arr = subsByCommunity.get(s.community_id) ?? [];
+          arr.push(s);
+          subsByCommunity.set(s.community_id, arr);
+        }
+        const { details } = buildCommunityTxns(rows, communities, subsByCommunity, 6);
         setSnapshots(snapshots);
+        setDetails(details);
         setConsidered(considered);
         setPhase(snapshots.length ? "review" : "idle");
         if (!snapshots.length) setError("No villa/townhouse sales in the last 6 months found in this file.");
@@ -52,8 +65,12 @@ export function DldImport({ communities }: { communities: Community[] }) {
 
   async function apply() {
     setPhase("saving");
-    const r = await applyMarketSnapshots(snapshots, "dld");
+    const [r, d] = await Promise.all([
+      applyMarketSnapshots(snapshots, "dld"),
+      applyMarketDetail(details),
+    ]);
     setResult(r);
+    setDetailResult(d.ok ? { communities: d.communities, transactions: d.transactions } : null);
     setPhase(r.ok ? "done" : "review");
     if (!r.ok) setError(r.error ?? "Save failed.");
   }
@@ -96,6 +113,7 @@ export function DldImport({ communities }: { communities: Community[] }) {
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <span className="text-paper-300"><b className="tnum text-paper-100">{num(considered)}</b> villa/TH sales</span>
             <span className="text-paper-300"><b className="tnum text-paper-100">{mapped.length}</b> snapshots matched</span>
+            <span className="text-paper-300"><b className="tnum text-paper-100">{details.reduce((s, d) => s + d.txns.length, 0)}</b> txns → {details.length} communit{details.length === 1 ? "y" : "ies"} (trends)</span>
             {unmapped.length > 0 && <span className="text-paper-500">{unmapped.length} area(s) unmapped</span>}
           </div>
 
@@ -142,6 +160,7 @@ export function DldImport({ communities }: { communities: Community[] }) {
           <p className="text-eyebrow text-status-ready">Market data updated</p>
           <p className="mt-2 text-paper-100">
             Wrote {result.applied} snapshot{result.applied === 1 ? "" : "s"} across {result.communities} communit{result.communities === 1 ? "y" : "ies"}.
+            {detailResult ? ` Stored ${num(detailResult.transactions)} transactions for interactive trends across ${detailResult.communities} communit${detailResult.communities === 1 ? "y" : "ies"}.` : ""}
             {result.unmapped.length ? ` ${result.unmapped.length} area(s) unmapped.` : ""}
           </p>
           {result.unmapped.length > 0 && (

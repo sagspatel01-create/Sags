@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { matchCommunity, type Snapshot } from "@/lib/sources/dld";
+import { matchCommunity, type Snapshot, type CommunityDetail } from "@/lib/sources/dld";
 
 export interface ApplyMarketResult {
   ok: boolean;
@@ -19,6 +19,8 @@ type Handle = {
     delete: () => { in: (c: string, v: unknown[]) => { eq: (c: string, v: unknown) => Promise<{ error: unknown }> } };
   };
 };
+
+const DETAIL_SOURCE = "dld-detail";
 
 /**
  * Write DLD market snapshots. Each snapshot's DLD project/area name is
@@ -87,5 +89,73 @@ export async function applyMarketSnapshots(
     };
   } catch (e) {
     return { ok: false, applied: 0, communities: 0, unmapped: [...unmapped], error: e instanceof Error ? e.message : "Write failed." };
+  }
+}
+
+export interface ApplyDetailResult {
+  ok: boolean;
+  communities: number;
+  transactions: number;
+  error?: string;
+}
+
+/**
+ * Write the per-community transaction detail that powers the Bayut-style
+ * Trends drill-down. Stored as a single `dld-detail` row per community
+ * (unit_type/reg_type null) carrying the compact txn list, the monthly trend
+ * and an appreciation figure. Rolling refresh: prior detail rows for each
+ * community are replaced. Communities are pre-matched by the importer, so the
+ * detail carries `community_id` directly.
+ */
+export async function applyMarketDetail(
+  details: CommunityDetail[],
+): Promise<ApplyDetailResult> {
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, communities: 0, transactions: 0, error: "Supabase not configured." };
+  const db = supabase as unknown as Handle;
+
+  const asOf = new Date().toISOString().slice(0, 10);
+  const rows: Record<string, unknown>[] = [];
+  let transactions = 0;
+
+  for (const d of details) {
+    if (!d.txns.length) continue;
+    transactions += d.txns.length;
+    const dates = d.txns.map((t) => t.d).sort();
+    rows.push({
+      community_id: d.community_id,
+      unit_type: null,
+      reg_type: null,
+      source: DETAIL_SOURCE,
+      as_of: asOf,
+      period_start: dates[0],
+      period_end: dates[dates.length - 1],
+      txn_count: d.txn_count,
+      median_price: d.median_price,
+      avg_price_per_sqft: d.median_ppsf,
+      appreciation_pct: d.appreciation_pct,
+      trend: d.trend,
+      sample_txns: d.txns,
+    });
+  }
+
+  try {
+    for (const d of details) {
+      await db.from("market_snapshots").delete().in("community_id", [d.community_id]).eq("source", DETAIL_SOURCE);
+    }
+    if (rows.length) {
+      const { error } = await db.from("market_snapshots").insert(rows);
+      if (error) throw error;
+    }
+    const { data: communities } = await db.from("communities").select("id,name,slug");
+    const byId = new Map((communities ?? []).map((c) => [c.id, c.slug]));
+    revalidatePath("/communities");
+    for (const d of details) {
+      const slug = byId.get(d.community_id);
+      if (slug) revalidatePath(`/communities/${slug}`);
+    }
+    return { ok: true, communities: rows.length, transactions };
+  } catch (e) {
+    return { ok: false, communities: 0, transactions: 0, error: e instanceof Error ? e.message : "Write failed." };
   }
 }
