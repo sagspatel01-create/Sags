@@ -118,6 +118,8 @@ export interface SubCommunityDetail extends SubCommunity {
   unit_archetypes: UnitArchetype[];
   documents: Document[];
   plan_assets: PlanAssetWithHotspots[];
+  data_confidence: "high" | "medium" | "low" | "unverified" | null;
+  source_note: string | null;
 }
 
 export interface SubCommunityAdmin extends SubCommunity {

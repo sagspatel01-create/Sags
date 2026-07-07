@@ -9,6 +9,7 @@ import { toPlanView, pickAsset } from "@/lib/data/plans";
 import { resolveStorageUrl } from "@/lib/supabase/storage";
 import { Section } from "@/components/ui/Section";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { ProvenanceChip } from "@/components/community/ProvenanceChip";
 import { Empty } from "@/components/ui/Empty";
 import { Card } from "@/components/ui/Card";
 import { MasterPlanViewer } from "@/components/community/MasterPlanViewer";
@@ -78,7 +79,10 @@ export default async function SubCommunityPage({
             {s.name}
           </h1>
         </div>
-        <StatusBadge status={s.status} />
+        <div className="flex items-center gap-2">
+          <StatusBadge status={s.status} />
+          <ProvenanceChip confidence={s.data_confidence} sourceNote={s.source_note} />
+        </div>
       </div>
 
       {/* Site plan */}
