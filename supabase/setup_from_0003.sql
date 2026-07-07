@@ -1611,6 +1611,8 @@ create index if not exists market_snapshots_sub_idx on market_snapshots(sub_comm
 create index if not exists market_snapshots_beds_idx on market_snapshots(community_id, bedrooms);
 
 
+
+
 -- =====================================================================
 -- 0017 — Community backbones + provenance
 --
@@ -1642,9 +1644,11 @@ do $$ begin
   if not exists (
     select 1 from pg_constraint where conname = 'communities_data_confidence_chk'
   ) then
+    -- 'unverified' is the default/unset state for rows not yet backboned
+    -- (matches the live database); high|medium|low are the graded states.
     alter table communities
       add constraint communities_data_confidence_chk
-      check (data_confidence is null or data_confidence in ('high','medium','low'));
+      check (data_confidence is null or data_confidence in ('high','medium','low','unverified'));
   end if;
 end $$;
 
@@ -1749,6 +1753,13 @@ from (values
    'Values-driven families wanting a genuinely sustainable, low-running-cost villa with a strong community ethos.',
    '{established,gated-family,wellness,nature,sustainable}','high',
    'Distinctive community; facts from public market knowledge (Jul 2026); counts/prices pending confirmation.'),
+
+  ('arabian-ranches','emaar','Arabian Ranches','ready','premium',
+   'Ready · first handover ~2004',
+   'Emaar''s original desert-suburb master community — established detached villas and townhouses across themed clusters (Al Reem, Saheel, Mirador, Alvorada) around the Arabian Ranches Golf Club, community centre and schools. A benchmark ready-villa resale market.',
+   'End-user families and investors who want a proven, established Emaar villa with a garden in a mature, amenity-complete community off Sheikh Mohammed Bin Zayed Road.',
+   '{established,gated-family,golf,schools-nearby,prestige}','high',
+   'Established Emaar community; structural & character facts from public market knowledge (Jul 2026); counts/prices pending DLD & developer confirmation.'),
 
   ('arabian-ranches-2','emaar','Arabian Ranches 2','ready','premium',
    'Ready · handover from ~2015',
