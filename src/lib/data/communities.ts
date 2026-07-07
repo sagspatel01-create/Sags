@@ -59,6 +59,8 @@ export interface CommunityDetail extends Community {
   market_snapshots: MarketSnapshot[];
   faqs: { q: string; a: string }[] | null;
   catalysts: { title: string; category: string; timeline: string; note: string }[] | null;
+  data_confidence: "high" | "medium" | "low" | "unverified" | null;
+  source_note: string | null;
 }
 
 /** Flat list of sub-communities (id, name, slug, parent) for cluster matching. */

@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/Card";
 import { MasterPlanViewer } from "@/components/community/MasterPlanViewer";
 import { MarketPanel } from "@/components/community/MarketPanel";
 import { MarketTrends } from "@/components/community/MarketTrends";
+import { ProvenanceChip } from "@/components/community/ProvenanceChip";
 import { CatalystsPanel } from "@/components/community/CatalystsPanel";
 import { AssetUploader } from "@/components/community/AssetUploader";
 import { DocumentShelf, type DocView } from "@/components/community/DocumentShelf";
@@ -114,6 +115,7 @@ export default async function CommunityPage({
               {TIER_LABEL[c.positioning_tier]}
             </span>
           )}
+          <ProvenanceChip confidence={c.data_confidence} sourceNote={c.source_note} />
           <Link
             href={`/compare?ids=${c.slug}`}
             className="rounded-lg border border-ink-500 px-3 py-1.5 text-xs text-paper-300 transition-colors hover:bg-ink-700 hover:text-paper-100"
