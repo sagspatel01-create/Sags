@@ -83,12 +83,23 @@ export async function fetchBayutSales(
   for (; page <= maxPages; page++) {
     const url = `https://${HOST}/transactions?purpose=for-sale&time_period=${timePeriod}&category_ids=${VILLA_TH_CATEGORY}&page=${page}`;
     let res: Response;
-    try {
-      res = await fetch(url, { headers });
-    } catch (e) {
-      return { rows, pages: page - 1, requests, error: e instanceof Error ? e.message : "fetch failed" };
+    // Retry on rate-limit (429) / transient 5xx with exponential backoff so a
+    // deep pull isn't cut short by the free tier's per-second throttle.
+    let attempt = 0;
+    for (;;) {
+      try {
+        res = await fetch(url, { headers });
+      } catch (e) {
+        if (attempt++ < 4) { await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt)); continue; }
+        return { rows, pages: page - 1, requests, error: e instanceof Error ? e.message : "fetch failed" };
+      }
+      requests++;
+      if ((res.status === 429 || res.status >= 500) && attempt++ < 5) {
+        await new Promise((r) => setTimeout(r, 1500 * 2 ** attempt));
+        continue;
+      }
+      break;
     }
-    requests++;
     if (!res.ok) {
       if (page === 1) return { rows, pages: 0, requests, error: `Bayut API ${res.status}: ${(await res.text()).slice(0, 160)}` };
       break;
