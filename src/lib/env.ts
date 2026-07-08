@@ -20,16 +20,20 @@ export const env = {
   // Restricts sign-in to the single owner. Optional; when set, only this
   // email may authenticate.
   adminEmail: process.env.ADMIN_EMAIL ?? "",
-  // Dubai Pulse (DLD) open-data API — powers the weekly automated
-  // transaction refresh. Server-only. Absent = manual CSV import only.
-  dubaipulseKey: process.env.DUBAIPULSE_API_KEY ?? "",
-  dubaipulseSecret: process.env.DUBAIPULSE_API_SECRET ?? "",
+  // Digital Dubai (DDA) iPaaS open-data API — powers the weekly automated
+  // DLD transaction refresh. Server-only. Absent = manual CSV import only.
+  // client_id / client_secret + the mandatory app identifier header.
+  dubaipulseKey: process.env.DUBAIPULSE_API_KEY ?? "",       // client_id
+  dubaipulseSecret: process.env.DUBAIPULSE_API_SECRET ?? "", // client_secret
+  dubaipulseAppId: process.env.DUBAIPULSE_APP_ID ?? "",      // x-DDA-SecurityApplicationIdentifier
+  // 'prod' → https://apis.data.dubai ; anything else → staging (channel test).
+  dubaipulseEnv: process.env.DUBAIPULSE_ENV ?? "prod",
   // Shared secret Vercel Cron sends so only the scheduler can trigger sync.
   cronSecret: process.env.CRON_SECRET ?? "",
 };
 
 export const isDldApiConfigured = (): boolean =>
-  Boolean(env.dubaipulseKey && env.dubaipulseSecret);
+  Boolean(env.dubaipulseKey && env.dubaipulseSecret && env.dubaipulseAppId);
 
 export const isSupabaseConfigured = (): boolean =>
   Boolean(env.supabaseUrl && env.supabaseAnonKey);

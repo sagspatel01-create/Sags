@@ -37,15 +37,20 @@ export default async function TransactionsImportPage() {
       <DldImport communities={lite} subs={subs} />
 
       <div className="mt-10 rounded-xl border border-ink-500 bg-ink-800/40 p-5 text-sm text-paper-500">
-        <p className="text-eyebrow">Automate weekly (Dubai Pulse API)</p>
+        <p className="text-eyebrow">Automate weekly (Digital Dubai / DDA API)</p>
         <p className="mt-2">
-          Register (free) for the DLD <code className="text-paper-300">dld_transactions</code>{" "}
-          dataset at dubaipulse.gov.ae, then set{" "}
-          <code className="text-paper-300">DUBAIPULSE_API_KEY</code> and{" "}
-          <code className="text-paper-300">DUBAIPULSE_API_SECRET</code> in the
-          deployment. A weekly job then pulls the last 6 months of villa &amp;
-          townhouse sales and refreshes every community automatically — no
-          upload needed. Manual CSV upload stays available for gap-fill.
+          Connected via the DDA iPaaS Open Data API. Set three variables in the
+          deployment:{" "}
+          <code className="text-paper-300">DUBAIPULSE_API_KEY</code> (client_id),{" "}
+          <code className="text-paper-300">DUBAIPULSE_API_SECRET</code> (client_secret) and{" "}
+          <code className="text-paper-300">DUBAIPULSE_APP_ID</code>{" "}
+          (x-DDA-SecurityApplicationIdentifier), plus{" "}
+          <code className="text-paper-300">DUBAIPULSE_ENV=prod</code>. The weekly
+          job authenticates, health-checks the channel, then pulls the last 6
+          months of villa &amp; townhouse sales and refreshes every community —
+          no upload needed. Requires the <code className="text-paper-300">dld_transactions</code>{" "}
+          grant to be active for <b>production</b> and the deployment&apos;s egress
+          IP authorised with DDA. Manual CSV upload stays available for gap-fill.
         </p>
       </div>
     </div>

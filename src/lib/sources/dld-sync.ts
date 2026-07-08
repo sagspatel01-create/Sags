@@ -30,7 +30,15 @@ export async function syncDldWeekly(monthsBack = 6): Promise<SyncResult> {
   since.setMonth(since.getMonth() - monthsBack);
   const sinceISO = since.toISOString().slice(0, 10);
 
-  const { rows, error } = await fetchDldTransactions(env.dubaipulseKey, env.dubaipulseSecret, sinceISO);
+  const { rows, error } = await fetchDldTransactions(
+    {
+      appId: env.dubaipulseAppId,
+      clientId: env.dubaipulseKey,
+      clientSecret: env.dubaipulseSecret,
+      env: env.dubaipulseEnv,
+    },
+    sinceISO,
+  );
   if (error && rows.length === 0) return { ok: false, error };
 
   const { snapshots, considered } = aggregate(rows, monthsBack);
