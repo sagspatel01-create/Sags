@@ -98,6 +98,25 @@ function parseDate(s: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
+/** The cutoff date `monthsBack` months before today. */
+export function cutoffDate(monthsBack = 6): Date {
+  const c = new Date();
+  c.setMonth(c.getMonth() - monthsBack);
+  return c;
+}
+
+/**
+ * Streaming keep-filter: true only for villa/townhouse *sales* within the
+ * window. Used by the browser importer to discard everything else DURING the
+ * parse, so a huge raw DLD dump (all types, all history) never accumulates in
+ * memory — only the handful of relevant rows are retained.
+ */
+export function isRecentVillaTh(r: DldRow, cutoff: Date): boolean {
+  if (!isVillaOrTownhouse(r) || !isSale(r) || !r.price) return false;
+  const d = parseDate(r.date);
+  return d != null && d >= cutoff;
+}
+
 export interface Snapshot {
   groupName: string; // DLD project/area used as the grouping key
   unit_type: "villa" | "townhouse";

@@ -7,6 +7,8 @@ import {
   aggregate,
   matchCommunity,
   buildCommunityTxns,
+  cutoffDate,
+  isRecentVillaTh,
   type DldRow,
   type Snapshot,
   type CommunityDetail,
@@ -33,13 +35,17 @@ export function DldImport({ communities, subs = [] }: { communities: Community[]
     setError(null);
     setFileName(file.name);
     const rows: DldRow[] = [];
+    const cutoff = cutoffDate(6);
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: true,
       worker: true,
+      // Keep only villa/townhouse sales in the last 6 months as we stream —
+      // so a 500MB+ all-Dubai, all-history export never blows up the browser;
+      // only the few relevant rows are ever held in memory.
       step: (r) => {
         const row = normalizeRow(r.data);
-        if (row.price) rows.push(row);
+        if (isRecentVillaTh(row, cutoff)) rows.push(row);
       },
       complete: () => {
         const { snapshots, considered } = aggregate(rows, 6);
