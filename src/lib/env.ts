@@ -30,7 +30,12 @@ export const env = {
   dubaipulseEnv: process.env.DUBAIPULSE_ENV ?? "prod",
   // Shared secret Vercel Cron sends so only the scheduler can trigger sync.
   cronSecret: process.env.CRON_SECRET ?? "",
+  // Bayut (RapidAPI "UAE Real Estate") DLD transactions — globally callable
+  // alternative source (no UAE-egress requirement). Static API key.
+  rapidApiKey: process.env.RAPIDAPI_KEY ?? "",
 };
+
+export const isBayutApiConfigured = (): boolean => Boolean(env.rapidApiKey);
 
 export const isDldApiConfigured = (): boolean =>
   Boolean(env.dubaipulseKey && env.dubaipulseSecret && env.dubaipulseAppId);
