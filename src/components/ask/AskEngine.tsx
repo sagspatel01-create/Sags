@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { askEngine, type AskSource, type WebSource } from "@/app/actions/ask";
+import { askEngine, type AskSource, type WebSource, type CommunityCard } from "@/app/actions/ask";
+import { aed, pct } from "@/lib/format";
 
 const SUGGESTIONS = [
   "Give me everything about Dubai Hills Estate",
@@ -21,6 +22,7 @@ export function AskEngine() {
   const [q, setQ] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
   const [sources, setSources] = useState<AskSource[]>([]);
+  const [cards, setCards] = useState<CommunityCard[]>([]);
   const [webSources, setWebSources] = useState<WebSource[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [asked, setAsked] = useState<string | null>(null);
@@ -35,6 +37,7 @@ export function AskEngine() {
       const res = await askEngine(text);
       setAnswer(res.answer);
       setSources(res.sources);
+      setCards(res.cards ?? []);
       setWebSources(res.webSources ?? []);
       setError(res.error ?? null);
     });
@@ -92,6 +95,14 @@ export function AskEngine() {
           <div className="mb-4 text-xs uppercase tracking-wider text-ink-500">
             Asked: <span className="text-paper-300">{asked}</span>
           </div>
+
+          {!pending && cards.length > 0 && (
+            <div className="mb-5 grid gap-3 sm:grid-cols-2">
+              {cards.map((c) => (
+                <CommunityTile key={c.slug} c={c} />
+              ))}
+            </div>
+          )}
 
           {pending && <div className="animate-pulse text-ink-500">Searching the engine…</div>}
 
@@ -152,5 +163,56 @@ export function AskEngine() {
         </div>
       )}
     </div>
+  );
+}
+
+const CONF: Record<string, { label: string; cls: string }> = {
+  high: { label: "High confidence", cls: "border-status-ready/50 bg-status-ready/10 text-status-ready" },
+  medium: { label: "Medium", cls: "border-accent-600/50 bg-accent-500/10 text-accent-400" },
+  low: { label: "Low", cls: "border-ink-700 bg-ink-900 text-ink-500" },
+};
+
+/** Rich, clickable summary tile for a community the answer is grounded in. */
+function CommunityTile({ c }: { c: CommunityCard }) {
+  const conf = c.confidence ? CONF[c.confidence] : undefined;
+  const counts = [
+    c.villaCount != null ? `${c.villaCount} villas` : null,
+    c.townhouseCount != null ? `${c.townhouseCount} TH` : null,
+    c.subCount != null ? `${c.subCount} sub-communities` : null,
+  ].filter(Boolean);
+  return (
+    <Link
+      href={`/communities/${c.slug}`}
+      className="group flex flex-col rounded-xl border border-ink-700 bg-ink-900/50 p-4 transition hover:border-accent-600 hover:bg-ink-900"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="font-medium text-paper-100 group-hover:text-accent-400">{c.name}</div>
+        <span className="shrink-0 rounded-full border border-ink-700 px-2 py-0.5 text-[0.625rem] uppercase tracking-wider text-ink-500 capitalize">
+          {c.status}
+        </span>
+      </div>
+      {c.developer && <div className="mt-0.5 text-xs text-ink-500">{c.developer}</div>}
+      {counts.length > 0 && <div className="mt-2 text-xs text-paper-300">{counts.join(" · ")}</div>}
+      {(c.medianPrice != null || c.appreciationPct != null) && (
+        <div className="mt-2 flex items-center gap-3 text-xs">
+          {c.medianPrice != null && (
+            <span className="text-paper-300">
+              Median <span className="text-paper-100">{aed(c.medianPrice)}</span>
+            </span>
+          )}
+          {c.appreciationPct != null && (
+            <span className={c.appreciationPct >= 0 ? "text-status-ready" : "text-status-offplan"}>
+              {pct(c.appreciationPct)} 6-mo
+            </span>
+          )}
+        </div>
+      )}
+      {conf && (
+        <span className={`mt-3 inline-flex w-fit items-center gap-1.5 rounded-full border px-2 py-0.5 text-[0.625rem] uppercase tracking-wider ${conf.cls}`}>
+          <span className="h-1 w-1 rounded-full bg-current" />
+          {conf.label}
+        </span>
+      )}
+    </Link>
   );
 }

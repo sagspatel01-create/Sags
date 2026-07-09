@@ -25,10 +25,25 @@ export interface WebSource {
   url: string;
 }
 
+/** A rich, clickable summary of a community the answer is grounded in. */
+export interface CommunityCard {
+  name: string;
+  slug: string;
+  status: string;
+  developer: string | null;
+  villaCount: number | null;
+  townhouseCount: number | null;
+  subCount: number | null;
+  confidence: "high" | "medium" | "low" | "unverified" | null;
+  medianPrice: number | null; // DLD 6-mo median, if held
+  appreciationPct: number | null; // DLD recent trend, if held
+}
+
 export interface AskResult {
   answer: string | null;
   sources: AskSource[];
   webSources: WebSource[];
+  cards: CommunityCard[];
   error?: string;
 }
 
@@ -154,13 +169,13 @@ function serialize(c: CommunityDetail): string {
  */
 export async function askEngine(question: string): Promise<AskResult> {
   const q = question.trim();
-  if (!q) return { answer: null, sources: [], webSources: [], error: "Ask a question first." };
+  if (!q) return { answer: null, sources: [], webSources: [], cards: [], error: "Ask a question first." };
 
   const client = getAnthropic();
-  if (!client) return { answer: null, sources: [], webSources: [], error: "The answer engine (Anthropic) is not configured." };
+  if (!client) return { answer: null, sources: [], webSources: [], cards: [], error: "The answer engine (Anthropic) is not configured." };
 
   const supabase = await createClient();
-  if (!supabase) return { answer: null, sources: [], webSources: [], error: "Database is not configured." };
+  if (!supabase) return { answer: null, sources: [], webSources: [], cards: [], error: "Database is not configured." };
 
   // Whole-catalogue retrieval index (cheap columns only).
   const [{ data: comms }, { data: subs }] = await Promise.all([
@@ -201,6 +216,7 @@ export async function askEngine(question: string): Promise<AskResult> {
   const targetSlugs = ranked.slice(0, 3);
 
   const sources: AskSource[] = [];
+  const cards: CommunityCard[] = [];
   let context: string;
   if (targetSlugs.length > 0) {
     const dossiers = await Promise.all(targetSlugs.map((slug) => getCommunityBySlug(slug)));
@@ -208,6 +224,19 @@ export async function askEngine(question: string): Promise<AskResult> {
     for (const d of dossiers) {
       if (!d) continue;
       sources.push({ name: d.name, slug: d.slug });
+      const detail = (d.market_snapshots ?? []).find((m) => m.source === "dld-detail");
+      cards.push({
+        name: d.name,
+        slug: d.slug,
+        status: d.status,
+        developer: d.developer?.name ?? null,
+        villaCount: d.villa_count ?? null,
+        townhouseCount: d.townhouse_count ?? null,
+        subCount: d.sub_community_count ?? (d.sub_communities?.length || null),
+        confidence: d.data_confidence,
+        medianPrice: detail?.median_price != null ? Number(detail.median_price) : null,
+        appreciationPct: detail?.appreciation_pct != null ? Number(detail.appreciation_pct) : null,
+      });
       blocks.push(serialize(d));
     }
     context = blocks.join("\n\n———\n\n");
@@ -293,7 +322,7 @@ export async function askEngine(question: string): Promise<AskResult> {
     }
 
     const answer = textParts.join("").trim() || null;
-    return { answer, sources, webSources };
+    return { answer, sources, webSources, cards };
   }
 
   // Try with the live-web fallback; if that call fails (e.g. web tool not
@@ -310,5 +339,5 @@ export async function askEngine(question: string): Promise<AskResult> {
   } catch {
     /* fall through to error */
   }
-  return { answer: null, sources, webSources: [], error: "The answer engine call failed." };
+  return { answer: null, sources, webSources: [], cards, error: "The answer engine call failed." };
 }
