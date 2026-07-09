@@ -17,6 +17,10 @@ const DEFAULTS: Omit<UnderwriteInput, "price" | "dealType"> = {
   grossYieldPct: 6,
   dldPct: 4,
   agencyPct: 2,
+  vacancyPct: 5,
+  mgmtFeePct: 5,
+  maintenancePct: 0.5,
+  insurancePct: 0.1,
   constructionYears: 3,
   constructionPct: 60,
   handoverPct: 40,
@@ -24,6 +28,7 @@ const DEFAULTS: Omit<UnderwriteInput, "price" | "dealType"> = {
   ltvPct: 75,
   mortgageRatePct: 4.5,
   mortgageTenorYears: 25,
+  stressRateDeltaPct: 2,
 };
 
 export function Underwriter({ deals }: { deals: DealOption[] }) {
@@ -125,6 +130,18 @@ export function Underwriter({ deals }: { deals: DealOption[] }) {
           <Field label="Service AED/sqft" value={sc ?? 0} onChange={(v) => setSc(v)} />
         </div>
 
+        <details className="group">
+          <summary className="cursor-pointer text-eyebrow marker:content-['']">
+            Operating assumptions <span className="text-paper-700 group-open:hidden">▸</span>
+          </summary>
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            <Field label="Vacancy %" value={f.vacancyPct ?? 0} onChange={(v) => setF({ ...f, vacancyPct: v })} />
+            <Field label="Mgmt fee %" value={f.mgmtFeePct ?? 0} onChange={(v) => setF({ ...f, mgmtFeePct: v })} />
+            <Field label="Maintenance %/yr" value={f.maintenancePct ?? 0} onChange={(v) => setF({ ...f, maintenancePct: v })} />
+            <Field label="Insurance %/yr" value={f.insurancePct ?? 0} onChange={(v) => setF({ ...f, insurancePct: v })} />
+          </div>
+        </details>
+
         {dealType === "offplan" ? (
           <div className="grid grid-cols-3 gap-3">
             <Field label="Constr. yrs" value={f.constructionYears ?? 0} onChange={(v) => setF({ ...f, constructionYears: v })} />
@@ -162,21 +179,36 @@ export function Underwriter({ deals }: { deals: DealOption[] }) {
       {/* Results */}
       <div className="space-y-5">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="IRR (on capital in)" value={r.irrPct != null ? pct(r.irrPct) : "—"} strong />
           <Stat label="Equity multiple" value={`${r.equityMultiple.toFixed(2)}×`} strong />
-          <Stat label="Annualized ROI" value={pct(r.annualizedRoiPct)} strong />
           <Stat label="Cash-on-cash" value={r.cashOnCashPct != null ? pct(r.cashOnCashPct) : "—"} />
-          <Stat label="Net yield" value={r.netYieldPct != null ? pct(r.netYieldPct) : "—"} />
+          <Stat label="ROE · yr 1" value={r.roeYear1Pct != null ? pct(r.roeYear1Pct) : "—"} />
         </div>
 
         <div className="elevate overflow-hidden rounded-xl border border-ink-500 bg-ink-800/40">
           <Row k="Cash invested (equity in)" v={aed(r.cashInvested)} />
           {r.loanAmount > 0 && <Row k="Mortgage" v={aed(r.loanAmount)} />}
           <Row k="Transaction costs" v={aed(r.transactionCosts)} />
+          {r.mortgageCosts > 0 && <Row k="Mortgage set-up costs" v={aed(r.mortgageCosts)} />}
+          <Row k="NOI (net of vacancy + all OpEx)" v={aed(r.noi)} />
+          {r.loanAmount > 0 && (
+            <Row
+              k="Annual debt service (int / principal)"
+              v={`${aed(r.annualDebtService)} (${aed(r.annualInterestY1)} / ${aed(r.annualPrincipalY1)})`}
+            />
+          )}
           <Row k={`Annual net cash flow · ${r.incomeYears}y`} v={aed(r.annualNetCashFlow)} />
+          {r.dscr != null && (
+            <Row
+              k="DSCR (stress +2%)"
+              v={`${r.dscr.toFixed(2)} (${r.stressedDscr?.toFixed(2) ?? "—"})`}
+              flag={r.dscr < 1.15}
+            />
+          )}
           <Row k="Projected exit value" v={aed(r.exitValue)} />
-          <Row k="Equity at exit" v={aed(r.exitEquity)} />
+          <Row k="Equity at exit (net of loan + sale)" v={aed(r.exitEquity)} />
           <Row k="Total profit" v={aed(r.totalProfit)} strong />
-          <Row k="Total ROI" v={pct(r.roiPct)} />
+          <Row k="Total ROI · net yield" v={`${pct(r.roiPct)} · ${r.netYieldPct != null ? pct(r.netYieldPct) : "—"}`} />
         </div>
 
         <p className="text-xs text-paper-700">
@@ -263,11 +295,14 @@ function Stat({ label, value, strong }: { label: string; value: string | null; s
   );
 }
 
-function Row({ k, v, strong }: { k: string; v: string | null; strong?: boolean }) {
+function Row({ k, v, strong, flag }: { k: string; v: string | null; strong?: boolean; flag?: boolean }) {
   return (
     <div className={`flex items-center justify-between border-b border-ink-600 px-5 py-3 last:border-b-0 ${strong ? "bg-ink-800/60" : ""}`}>
-      <span className="text-sm text-paper-500">{k}</span>
-      <span className={`tnum text-sm ${strong ? "font-medium text-paper-100" : "text-paper-200"}`}>{v ?? "—"}</span>
+      <span className="text-sm text-paper-500">
+        {k}
+        {flag && <span className="ml-2 rounded-full border border-red-400/40 px-1.5 py-0.5 text-[0.5625rem] uppercase tracking-wider text-red-400/90">tight</span>}
+      </span>
+      <span className={`tnum text-sm ${flag ? "text-red-400" : strong ? "font-medium text-paper-100" : "text-paper-200"}`}>{v ?? "—"}</span>
     </div>
   );
 }
