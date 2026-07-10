@@ -19,6 +19,7 @@ export const NAV: NavItem[] = [
   { label: "Client Profile", href: "/client", milestone: 3, ready: true },
   { label: "Compare", href: "/compare", milestone: 4, ready: true },
   { label: "Underwrite", href: "/underwrite", milestone: null, ready: true },
+  { label: "Estimate", href: "/estimate", milestone: null, ready: true },
   { label: "Screener", href: "/screener", milestone: null, ready: true },
   { label: "Filters", href: "/browse", milestone: 6, ready: true },
   { label: "Live Market", href: "/live", milestone: null, ready: true },
