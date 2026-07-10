@@ -158,6 +158,14 @@ function Report({ r }: { r: EstimateReport }) {
         <p className="mt-4 text-xs text-paper-500">
           Based on {r.compCount} DLD comparable{r.compCount === 1 ? "" : "s"} — {r.compBasis}.
         </p>
+        <Link
+          href={`/underwrite?price=${r.value}&bua=${r.bua_sqft}&type=ready&name=${encodeURIComponent(
+            `${r.subCluster ? r.subCluster + ", " : ""}${r.communityName}`,
+          )}`}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-accent-600/60 bg-accent-500/10 px-3.5 py-2 text-sm text-accent-400 transition hover:bg-accent-500/20"
+        >
+          Underwrite this unit at {aed(r.value)} <span>→</span>
+        </Link>
       </div>
 
       {/* Price trend */}

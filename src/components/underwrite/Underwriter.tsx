@@ -51,16 +51,25 @@ const FIN_LABEL: Record<Financing, string> = {
   buyout: "Buyout",
 };
 
-export function Underwriter({ deals }: { deals: DealOption[] }) {
-  const [dealKey, setDealKey] = useState<string>(deals[0]?.key ?? "manual");
+export interface UnderwritePrefill {
+  price?: number;
+  bua?: number;
+  name?: string;
+  type?: DealType;
+}
+
+export function Underwriter({ deals, prefill }: { deals: DealOption[]; prefill?: UnderwritePrefill }) {
+  // A prefill (e.g. handed off from the Estimate tool) starts in manual mode
+  // with the estimated value + area already filled.
+  const [dealKey, setDealKey] = useState<string>(prefill?.price ? "manual" : deals[0]?.key ?? "manual");
   const deal = deals.find((d) => d.key === dealKey) ?? null;
 
-  const [price, setPrice] = useState<number>(deals[0]?.price ?? 5_000_000);
+  const [price, setPrice] = useState<number>(prefill?.price ?? deals[0]?.price ?? 5_000_000);
   const [dealType, setDealType] = useState<DealType>(
-    (deals[0]?.status === "offplan" ? "offplan" : "ready") as DealType,
+    (prefill?.type ?? (deals[0]?.status === "offplan" ? "offplan" : "ready")) as DealType,
   );
   const [f, setF] = useState({ ...DEFAULTS });
-  const [bua, setBua] = useState<number | null>(deals[0]?.bua_sqft ?? null);
+  const [bua, setBua] = useState<number | null>(prefill?.bua ?? deals[0]?.bua_sqft ?? null);
   const [sc, setSc] = useState<number | null>(deals[0]?.service_charge_per_sqft ?? 4);
   const [ppsfTarget, setPpsfTarget] = useState<number | null>(null);
   const [manualLoan, setManualLoan] = useState<number | null>(null);

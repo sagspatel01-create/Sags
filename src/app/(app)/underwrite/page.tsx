@@ -6,9 +6,24 @@ import { HowItWorks } from "@/components/ui/HowItWorks";
 
 export const dynamic = "force-dynamic";
 
-export default async function UnderwritePage() {
+export default async function UnderwritePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ price?: string; bua?: string; name?: string; type?: string }>;
+}) {
   if (!isSupabaseConfigured()) return <NotConfigured />;
   const deals = await getDealOptions();
+
+  // Handoff from the Estimate tool (or a deep link): prefill the model.
+  const sp = await searchParams;
+  const prefill = sp.price
+    ? {
+        price: Number(sp.price) || undefined,
+        bua: sp.bua ? Number(sp.bua) || undefined : undefined,
+        name: sp.name,
+        type: (sp.type === "offplan" ? "offplan" : "ready") as "offplan" | "ready",
+      }
+    : undefined;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12 md:px-10">
@@ -53,7 +68,7 @@ export default async function UnderwritePage() {
         </p>
       ) : null}
 
-      <Underwriter deals={deals} />
+      <Underwriter deals={deals} prefill={prefill} />
     </div>
   );
 }
