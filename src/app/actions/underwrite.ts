@@ -28,11 +28,14 @@ export async function investmentVerdict(
     `Purchase price: ${aed(input.price)}`,
     `Cash invested (equity in): ${aed(r.cashInvested)}`,
     input.dealType === "offplan"
-      ? `Payment plan: ${input.constructionPct ?? 100}/${input.handoverPct ?? 0}, ~${input.constructionYears ?? 0}y to handover`
-      : input.financing === "mortgage"
-        ? `Financing: mortgage ${input.ltvPct ?? 75}% LTV @ ${input.mortgageRatePct ?? 4.5}% / ${input.mortgageTenorYears ?? 25}y`
+      ? `Payment plan: ${input.constructionPct ?? 100}% during construction / ${input.handoverPct ?? 0}% at handover${input.postHandoverPct ? " / " + input.postHandoverPct + "% post-handover" : ""}, ~${input.constructionYears ?? 0}y build (no agency fee — direct from developer)`
+      : input.financing && input.financing !== "cash"
+        ? `Financing: ${input.financing.replace("_", " ")} — loan ${aed(r.loanAmount)} (${Math.round((r.loanAmount / input.price) * 100)}% of price), down ${aed(r.downPayment)} @ ${input.mortgageRatePct ?? 4.5}% / ${input.mortgageTenorYears ?? 25}y`
         : "Financing: all cash",
-    `Hold: ${input.holdingYears}y at ${pct(input.appreciationPct)} p.a. appreciation, ${pct(input.grossYieldPct)} gross yield`,
+    `Hold: ${input.holdingYears}y at ${pct(r.effectiveAppreciationPct)} p.a. appreciation, ${pct(input.grossYieldPct)} gross yield`,
+    r.entryPricePerSqft != null
+      ? `Capital appreciation: ${Math.round(r.entryPricePerSqft).toLocaleString()} → ${Math.round(r.exitPricePerSqft ?? 0).toLocaleString()} AED/sqft (+${pct(r.appreciationTotalPct)} over the hold)`
+      : "",
     `NOI (net of vacancy + all OpEx): ${aed(r.noi)}/yr`,
     r.loanAmount > 0 ? `Annual debt service: ${aed(r.annualDebtService)} (interest ${aed(r.annualInterestY1)} / principal ${aed(r.annualPrincipalY1)})` : "",
     `Annual net cash flow: ${aed(r.annualNetCashFlow)} over ${r.incomeYears} income year(s)`,
