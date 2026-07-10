@@ -3,6 +3,39 @@
 import { getAnthropic, GENERATION_MODEL } from "@/lib/anthropic";
 import { createClient } from "@/lib/supabase/server";
 import { getCommunityBySlug, type CommunityDetail } from "@/lib/data/communities";
+import { getScreenerRows } from "@/lib/data/screener";
+import { aed as fmtAed } from "@/lib/format";
+
+/**
+ * A compact, ranked market-intelligence table over every community we hold live
+ * DLD data for — median price, price/sqft, 6-month trend, liquidity (sale
+ * count) and an indicative IRR at standard assumptions. Included in the grounded
+ * context on every question so the engine can reason ACROSS communities
+ * ("highest appreciation", "most liquid", "best risk-adjusted return",
+ * "cheapest 4-bed villa areas") entirely from real numbers.
+ */
+async function marketDigest(): Promise<string> {
+  const rows = await getScreenerRows();
+  if (!rows.length) return "";
+  const lines = rows.map((r) => {
+    const bits = [
+      r.medianPrice ? `median ${fmtAed(r.medianPrice)}` : null,
+      r.pricePerSqft ? `${Math.round(r.pricePerSqft)}/sqft` : null,
+      r.appreciationPct != null ? `${r.appreciationPct}% 6-mo` : null,
+      r.txnCount ? `${r.txnCount} sales` : null,
+      r.irrPct != null ? `IRR ${r.irrPct.toFixed(0)}%` : null,
+      `score ${r.score}`,
+    ].filter(Boolean);
+    return `- ${r.name} (${r.developer ?? "n/a"}, ${r.status}): ${bits.join(", ")}`;
+  });
+  return (
+    "MARKET INTELLIGENCE — live DLD, every community we hold data for. Medians " +
+    "and price/sqft are DLD-registered; 6-mo is the recent trend; liquidity = " +
+    "sale count; IRR is indicative at standard assumptions (5% yield, 75% LTV, " +
+    "5-yr hold — identical across rows); score is 60% return + 40% liquidity " +
+    "percentile:\n" + lines.join("\n")
+  );
+}
 
 /**
  * "Ask the Engine" — the NotebookLM-style grounded search over the community
@@ -261,35 +294,60 @@ export async function askEngine(
     }
     context = blocks.join("\n\n———\n\n");
   } else {
-    // No specific community matched — give the model the catalogue index so it
-    // can still answer "which communities does X developer have?" style asks.
+    // No specific community matched (an analytical / cross-community question).
+    // Give the full catalogue index so "which communities does X have?" works.
     context =
-      "No single community matched. Catalogue index (name — developer — status):\n" +
+      "No single community named. Catalogue index (name — developer — status):\n" +
       index.map((c) => `- ${c.name} — ${c.developer ?? "n/a"} — ${c.status}`).join("\n");
   }
 
+  // Always attach the live market-intelligence table so the engine can reason
+  // across communities with real numbers, whatever was (or wasn't) matched.
+  const digest = await marketDigest();
+  if (digest) context += `\n\n———\n\n${digest}`;
+
   const system =
-    "You are the Dubai Villa & Townhouse Intelligence Engine — a grounded " +
-    "knowledge base for Dubai villa and townhouse communities. \n\n" +
-    "GROUNDING RULES (strict — this product must never hallucinate):\n" +
-    "1. ANSWER FROM THE DATA FIRST. The DATA block below is the engine's own " +
-    "curated records — prefer it for every fact it contains, and quote its " +
-    "numbers exactly. When you cite a price, price-per-sqft, median or " +
-    "transaction stat, make clear it is DLD-sourced.\n" +
-    "2. LIVE WEB FOR GAPS ONLY. If — and only if — the DATA does not contain " +
-    "something the user needs (e.g. a school rating, a new metro line, an " +
-    "off-plan launch, a handover update), you MAY use the web_search tool to " +
-    "find it. Every fact you take from the web MUST come with its citation. " +
-    "Never state a web-derived fact without a citation.\n" +
+    "You are the analyst behind the Dubai Villa & Townhouse Intelligence " +
+    "Engine — a sharp, senior real-estate investment mind who knows this market " +
+    "cold. You are speaking to a professional (a broker or investor), so be " +
+    "direct, opinionated and genuinely useful — not a hedging encyclopaedia.\n\n" +
+    "GROUNDING RULES (strict — this product must NEVER hallucinate; that is what " +
+    "makes it trusted):\n" +
+    "1. ANSWER FROM THE DATA. The DATA block below — community dossiers, unit " +
+    "configurations, DLD transaction records and the MARKET INTELLIGENCE table — " +
+    "is the engine's own curated truth. Prefer it for every fact, and quote its " +
+    "numbers exactly. Tag every price/sqft/median/appreciation figure as " +
+    "DLD-sourced.\n" +
+    "2. LIVE WEB FOR GAPS ONLY. If the DATA lacks something the user needs (a " +
+    "school rating, a new metro line, an off-plan launch, a handover update), " +
+    "you MAY use web_search — and every web-derived fact MUST carry its " +
+    "citation. Never state a web fact without one.\n" +
     "3. NEVER INVENT. If a fact is neither in the DATA nor findable with a " +
-    "citation, say plainly it is not yet in the engine — do not guess unit " +
-    "counts, prices, sizes, or names.\n" +
-    "4. PRICES ARE DLD-ONLY. Never take a sale price, price-per-sqft, median, " +
-    "or appreciation figure from the web — those come only from the DATA " +
-    "(DLD-registered). The web is for context, not transaction truth.\n\n" +
-    "STYLE: Lead with the direct answer, then supporting detail. Name " +
-    "sub-communities, unit types, bedroom counts and sizes specifically. " +
-    "Crisp, expert, no filler.";
+    "citation, say plainly what's missing (\"unit-type breakdown for X isn't in " +
+    "the engine yet\") — never guess counts, prices, sizes or names.\n" +
+    "4. PRICES ARE DLD-ONLY. Never take a sale price, price/sqft, median or " +
+    "appreciation from the web — those come only from the DATA. Web is context, " +
+    "not transaction truth.\n\n" +
+    "HOW TO THINK (this is where you beat a listings portal):\n" +
+    "• Be analytical. Don't just recite — interpret. Use the MARKET " +
+    "INTELLIGENCE table to compare, rank and spot what's cheap, liquid, " +
+    "appreciating or over-heated. Compute rough figures (price/sqft × size, " +
+    "yield, entry vs peers) when it helps, and show your working briefly.\n" +
+    "• Be critical. Name the risks and caveats honestly — thin transaction " +
+    "samples, low data-confidence, negative 6-month trends, illiquidity, " +
+    "handover risk. Flag when a number is a small sample. Trust is the product.\n" +
+    "• Be creative. Surface the non-obvious angle a good analyst would — a " +
+    "comparable community the user didn't ask about, a cluster that's " +
+    "mispriced, a better-value alternative, a timing read.\n" +
+    "• Point to the tools. When a question is really a valuation, say it can be " +
+    "run precisely on the Estimate page; when it's about returns, point to " +
+    "Underwrite; when it's 'where should I deploy capital', reference the " +
+    "Screener ranking.\n\n" +
+    "STYLE: Open with the direct answer / your read in one or two sentences. " +
+    "Then the evidence — specific sub-communities, unit types, bedroom counts, " +
+    "sizes and DLD figures. Use tight structure (short paragraphs or bullets). " +
+    "Confident, specific, no filler, no boilerplate hedging. Under ~350 words " +
+    "unless the question genuinely needs more.";
 
   // web_search_20260209 = server-side web tool with per-fact citations (Opus
   // 4.6+). The model reaches for it only when the DATA lacks something, per the
@@ -323,7 +381,10 @@ export async function askEngine(
     for (let hop = 0; hop < 5; hop++) {
       const res = await client!.messages.create({
         model: GENERATION_MODEL,
-        max_tokens: 1400,
+        max_tokens: 3200, // room for adaptive thinking + a full analyst answer
+        // Adaptive thinking so the analyst reasons critically/creatively before
+        // answering (Opus 4.8: thinking is off unless set explicitly).
+        thinking: { type: "adaptive" } as never,
         system,
         messages: messages as never,
         ...(withWeb ? { tools: [webTool] as never } : {}),
