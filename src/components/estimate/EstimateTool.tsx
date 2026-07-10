@@ -10,8 +10,10 @@ import {
 } from "@/lib/estimate";
 import { aed, num, pct } from "@/lib/format";
 
-export function EstimateTool({ catalogue }: { catalogue: EstimateCommunity[] }) {
-  const [slug, setSlug] = useState(catalogue[0]?.slug ?? "");
+export function EstimateTool({ catalogue, initialSlug }: { catalogue: EstimateCommunity[]; initialSlug?: string }) {
+  const [slug, setSlug] = useState(
+    (initialSlug && catalogue.some((c) => c.slug === initialSlug) ? initialSlug : catalogue[0]?.slug) ?? "",
+  );
   const [subCluster, setSubCluster] = useState<string>("");
   const [bedrooms, setBedrooms] = useState<number>(4);
   const [bua, setBua] = useState<number>(3000);

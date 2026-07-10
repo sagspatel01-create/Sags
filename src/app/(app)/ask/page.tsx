@@ -5,8 +5,13 @@ import { HowItWorks } from "@/components/ui/HowItWorks";
 
 export const dynamic = "force-dynamic";
 
-export default function AskPage() {
+export default async function AskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   if (!isSupabaseConfigured()) return <NotConfigured />;
+  const { q } = await searchParams;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12 md:px-10">
@@ -43,7 +48,7 @@ export default function AskPage() {
       />
 
       <div className="mt-8">
-        <AskEngine />
+        <AskEngine initialQuestion={q} />
       </div>
     </div>
   );

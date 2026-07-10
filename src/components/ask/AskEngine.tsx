@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { askEngine, type AskSource, type WebSource, type CommunityCard } from "@/app/actions/ask";
 import { aed, pct } from "@/lib/format";
@@ -29,12 +29,23 @@ interface Turn {
  * suggests next questions. Every answer is grounded in the engine's own data
  * first, with a cited live-web fallback — nothing is invented.
  */
-export function AskEngine() {
+export function AskEngine({ initialQuestion }: { initialQuestion?: string }) {
   const [q, setQ] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [pending, startTransition] = useTransition();
   const carrySlugs = useRef<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
+  const didInit = useRef(false);
+
+  // Auto-run a question handed in via ?q= (e.g. "Ask the engine" from a
+  // community page) exactly once.
+  useEffect(() => {
+    if (initialQuestion && !didInit.current) {
+      didInit.current = true;
+      run(initialQuestion);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuestion]);
 
   function run(question: string) {
     const text = question.trim();

@@ -6,9 +6,14 @@ import { HowItWorks } from "@/components/ui/HowItWorks";
 
 export const dynamic = "force-dynamic";
 
-export default async function EstimatePage() {
+export default async function EstimatePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ community?: string }>;
+}) {
   if (!isSupabaseConfigured()) return <NotConfigured />;
   const catalogue = await getEstimateCatalogue();
+  const { community } = await searchParams;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12 md:px-10">
@@ -46,7 +51,7 @@ export default async function EstimatePage() {
       {catalogue.length === 0 ? (
         <p className="mt-8 text-sm text-paper-500">No communities loaded yet.</p>
       ) : (
-        <EstimateTool catalogue={catalogue} />
+        <EstimateTool catalogue={catalogue} initialSlug={community} />
       )}
     </div>
   );

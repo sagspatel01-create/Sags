@@ -116,12 +116,19 @@ export default async function CommunityPage({
             </span>
           )}
           <ProvenanceChip confidence={c.data_confidence} sourceNote={c.source_note} />
-          <Link
-            href={`/compare?ids=${c.slug}`}
-            className="rounded-lg border border-ink-500 px-3 py-1.5 text-xs text-paper-300 transition-colors hover:bg-ink-700 hover:text-paper-100"
-          >
-            Compare
-          </Link>
+          {[
+            { href: `/compare?ids=${c.slug}`, label: "Compare" },
+            { href: `/estimate?community=${c.slug}`, label: "Value a unit" },
+            { href: `/ask?q=${encodeURIComponent("Give me everything about " + c.name)}`, label: "Ask the engine" },
+          ].map((l) => (
+            <Link
+              key={l.label}
+              href={l.href}
+              className="rounded-lg border border-ink-500 px-3 py-1.5 text-xs text-paper-300 transition-colors hover:bg-ink-700 hover:text-paper-100"
+            >
+              {l.label}
+            </Link>
+          ))}
         </div>
       </div>
 
