@@ -1,6 +1,7 @@
 import { isSupabaseConfigured } from "@/lib/env";
 import { AskEngine } from "@/components/ask/AskEngine";
 import { NotConfigured } from "@/components/community/NotConfigured";
+import { HowItWorks } from "@/components/ui/HowItWorks";
 
 export const dynamic = "force-dynamic";
 
@@ -14,13 +15,32 @@ export default function AskPage() {
         The Dubai villa &amp; townhouse notebook
       </h1>
       <p className="mt-4 text-paper-300">
-        Ask anything about the communities, sub-communities, unit types, and
-        transaction records held in the engine. Every answer is grounded in our
-        own curated data first — and when a fact isn&apos;t held yet, the engine
-        can pull it live from the web <span className="text-paper-100">with a
-        citation</span>. Transaction prices always stay DLD-sourced; nothing is
-        invented.
+        A notebook over everything the engine holds — communities,
+        sub-communities, unit types and transaction records. Ask, then keep
+        asking: follow-ups stay grounded in the same community, and each answer
+        surfaces the communities it drew on plus suggested next questions.
+        Grounded in our curated data first, with a{" "}
+        <span className="text-paper-100">cited</span> live-web fallback for gaps.
+        Prices stay DLD-sourced; nothing is invented.
       </p>
+
+      <HowItWorks
+        title="How the notebook works"
+        items={[
+          {
+            q: "Where do answers come from?",
+            a: "First from the engine's own curated dossiers (communities, unit configs, DLD transaction records). If a fact isn't held — a school rating, a new metro line, a fresh off-plan launch — it may fetch it live from the web and shows the citation. It will say “not yet in the engine” rather than guess.",
+          },
+          {
+            q: "What can't it do?",
+            a: "It won't state a sale price, median or appreciation from the web — those come only from DLD-registered data. And it won't invent unit counts, sizes or names.",
+          },
+          {
+            q: "Follow-ups & suggestions",
+            a: "It remembers the conversation, so “what about the 4-bedroom?” stays anchored to the community you were discussing. After each answer it proposes a few next questions — click one to continue.",
+          },
+        ]}
+      />
 
       <div className="mt-8">
         <AskEngine />

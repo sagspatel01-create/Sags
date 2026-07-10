@@ -44,7 +44,18 @@ export interface AskResult {
   sources: AskSource[];
   webSources: WebSource[];
   cards: CommunityCard[];
+  /** Slugs the answer was grounded in — passed back on the next turn so
+   *  follow-ups ("what about the 4BR?") stay anchored to the same community. */
+  groundedSlugs: string[];
+  /** Suggested next questions, NotebookLM-style. */
+  suggestedFollowups: string[];
   error?: string;
+}
+
+/** One prior turn, passed back so the model has conversational context. */
+export interface AskTurn {
+  role: "user" | "assistant";
+  content: string;
 }
 
 /** Index row used only for retrieval (cheap, whole-catalogue). */
@@ -167,15 +178,19 @@ function serialize(c: CommunityDetail): string {
  * grounds Claude on their full dossier, and returns the answer plus the sources
  * it drew from.
  */
-export async function askEngine(question: string): Promise<AskResult> {
+export async function askEngine(
+  question: string,
+  opts: { history?: AskTurn[]; carrySlugs?: string[] } = {},
+): Promise<AskResult> {
+  const empty = { sources: [], webSources: [], cards: [], groundedSlugs: [], suggestedFollowups: [] };
   const q = question.trim();
-  if (!q) return { answer: null, sources: [], webSources: [], cards: [], error: "Ask a question first." };
+  if (!q) return { answer: null, ...empty, error: "Ask a question first." };
 
   const client = getAnthropic();
-  if (!client) return { answer: null, sources: [], webSources: [], cards: [], error: "The answer engine (Anthropic) is not configured." };
+  if (!client) return { answer: null, ...empty, error: "The answer engine (Anthropic) is not configured." };
 
   const supabase = await createClient();
-  if (!supabase) return { answer: null, sources: [], webSources: [], cards: [], error: "Database is not configured." };
+  if (!supabase) return { answer: null, ...empty, error: "Database is not configured." };
 
   // Whole-catalogue retrieval index (cheap columns only).
   const [{ data: comms }, { data: subs }] = await Promise.all([
@@ -213,7 +228,12 @@ export async function askEngine(question: string): Promise<AskResult> {
 
   const ranked = [...score.entries()].sort((a, b) => b[1] - a[1]).map(([slug]) => slug);
   // Load full dossiers for the top matches (cap so the context stays tight).
-  const targetSlugs = ranked.slice(0, 3);
+  // If this turn names no community (a follow-up like "what about the 4BR?"),
+  // carry forward the communities the previous turn was grounded in.
+  let targetSlugs = ranked.slice(0, 3);
+  if (targetSlugs.length === 0 && opts.carrySlugs && opts.carrySlugs.length) {
+    targetSlugs = opts.carrySlugs.slice(0, 3);
+  }
 
   const sources: AskSource[] = [];
   const cards: CommunityCard[] = [];
@@ -282,8 +302,17 @@ export async function askEngine(question: string): Promise<AskResult> {
     citations?: Array<{ type?: string; url?: string; title?: string }> | null;
   };
 
+  // Grounded slugs + suggested follow-ups (NotebookLM-style) — heuristic, so
+  // they're instant and never hallucinated.
+  const groundedSlugs = sources.map((s) => s.slug);
+  const suggestedFollowups = buildFollowups(cards);
+
   async function generate(withWeb: boolean): Promise<AskResult> {
+    // Prior turns (capped) give the model conversational continuity so
+    // follow-ups resolve ("it", "that community", "the 4-bedroom").
+    const hist = (opts.history ?? []).slice(-6).map((t) => ({ role: t.role, content: t.content }));
     const messages: Array<{ role: "user" | "assistant"; content: unknown }> = [
+      ...hist,
       { role: "user", content: `QUESTION:\n${q}\n\nDATA:\n${context}` },
     ];
     const webSources: WebSource[] = [];
@@ -322,7 +351,7 @@ export async function askEngine(question: string): Promise<AskResult> {
     }
 
     const answer = textParts.join("").trim() || null;
-    return { answer, sources, webSources, cards };
+    return { answer, sources, webSources, cards, groundedSlugs, suggestedFollowups };
   }
 
   // Try with the live-web fallback; if that call fails (e.g. web tool not
@@ -339,5 +368,36 @@ export async function askEngine(question: string): Promise<AskResult> {
   } catch {
     /* fall through to error */
   }
-  return { answer: null, sources, webSources: [], cards, error: "The answer engine call failed." };
+  return {
+    answer: null, sources, webSources: [], cards,
+    groundedSlugs: sources.map((s) => s.slug),
+    suggestedFollowups: buildFollowups(cards),
+    error: "The answer engine call failed.",
+  };
+}
+
+/** Heuristic follow-up questions from the grounded communities — reliable and
+ *  instant (no extra model call, nothing invented). */
+function buildFollowups(cards: CommunityCard[]): string[] {
+  if (cards.length >= 2) {
+    const [a, b] = cards;
+    return [
+      `Compare ${a.name} and ${b.name} for a family under AED 10M`,
+      `Which of these has the strongest 6-month price trend?`,
+      `Underwrite a typical villa in ${a.name}`,
+    ];
+  }
+  if (cards.length === 1) {
+    const c = cards[0];
+    return [
+      `What unit types and sizes are in ${c.name}?`,
+      `What's the 6-month transaction trend in ${c.name}?`,
+      `Underwrite a typical ${c.name} villa at 75% LTV`,
+    ];
+  }
+  return [
+    "Which communities have the highest recent appreciation?",
+    "Show me family villa communities under AED 5M",
+    "Which developer has the most off-plan launches right now?",
+  ];
 }
