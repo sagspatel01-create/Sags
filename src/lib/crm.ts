@@ -247,8 +247,10 @@ export type PipelineSummary = {
   openDeals: number;
   openValue: number;
   weightedValue: number;
+  weightedCommission: number; // "money to be made" — prob-weighted commission across open + disbursed
   dueToday: number;
   disbursedThisMonth: number;
+  commissionThisMonth: number; // committed commission landing this month
 };
 
 /** Headline pipeline stats for the CRM overview. Pure. */
@@ -262,17 +264,34 @@ export function summarizePipeline(
   let openDeals = 0;
   let openValue = 0;
   let weightedValue = 0;
+  let weightedCommission = 0;
   let disbursedThisMonth = 0;
+  let commissionThisMonth = 0;
   for (const d of deals) {
+    if (d.stage === "lost") continue;
+    const disb = dealDisbursement(d);
+    const comm = dealCommission(d);
     if (isOpenStage(d.stage)) {
       openDeals += 1;
-      const disb = dealDisbursement(d);
       openValue += disb;
       weightedValue += (disb * d.probability) / 100;
+      weightedCommission += (comm * d.probability) / 100;
+    } else if (d.stage === "disbursed") {
+      weightedCommission += comm; // banked
     }
     if (d.stage === "disbursed" && toMonthKey(d.close_month) === thisMonth) {
-      disbursedThisMonth += dealDisbursement(d);
+      disbursedThisMonth += disb;
+      commissionThisMonth += comm;
     }
   }
-  return { totalContacts, openDeals, openValue, weightedValue, dueToday, disbursedThisMonth };
+  return {
+    totalContacts,
+    openDeals,
+    openValue,
+    weightedValue,
+    weightedCommission,
+    dueToday,
+    disbursedThisMonth,
+    commissionThisMonth,
+  };
 }
