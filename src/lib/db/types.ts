@@ -34,6 +34,32 @@ export type HotspotTarget =
   | "plan_asset"
   | "url";
 
+// ---- CRM enums -------------------------------------------------------
+export type CrmStage =
+  | "new_lead"
+  | "contacted"
+  | "qualified"
+  | "docs_collected"
+  | "submitted"
+  | "approved"
+  | "disbursed"
+  | "lost"
+  | "dormant";
+export type CrmProduct =
+  | "new_purchase"
+  | "handover_offplan"
+  | "equity_release"
+  | "buyout_transfer"
+  | "other";
+export type CrmLeadSource =
+  | "meta_ads"
+  | "referral"
+  | "website"
+  | "walk_in"
+  | "manual"
+  | "other";
+export type CrmChannel = "whatsapp" | "call" | "email" | "other";
+
 // ---- Row shapes ------------------------------------------------------
 export type Developer = {
   id: string;
@@ -376,6 +402,65 @@ export type PlanHotspot = {
 // assignable to Record<string, unknown>. Interfaces (unlike type aliases)
 // lack an implicit index signature, so we intersect one in — otherwise the
 // schema fails the constraint and insert payloads collapse to `never`.
+// ---- CRM row shapes --------------------------------------------------
+export type CrmContact = {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  source: CrmLeadSource;
+  source_detail: string | null;
+  notes: string | null;
+  is_client: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CrmDeal = {
+  id: string;
+  contact_id: string;
+  title: string | null;
+  product: CrmProduct;
+  product_other: string | null;
+  stage: CrmStage;
+  property_value: number | null;
+  loan_amount: number | null;
+  commission_pct: number | null;
+  commission_amount: number | null;
+  close_month: string | null; // date, first of month
+  probability: number;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CrmNote = {
+  id: string;
+  contact_id: string;
+  deal_id: string | null;
+  body: string;
+  created_at: string;
+};
+
+export type CrmFollowup = {
+  id: string;
+  contact_id: string;
+  deal_id: string | null;
+  due_on: string;
+  channel: CrmChannel;
+  note: string | null;
+  done: boolean;
+  done_at: string | null;
+  created_at: string;
+};
+
+export type CrmTarget = {
+  month: string; // date, first of month
+  target_amount: number;
+  created_at: string;
+  updated_at: string;
+};
+
 type TableShape<Row> = {
   Row: Row & Record<string, unknown>;
   Insert: Partial<Row> & Record<string, unknown>;
@@ -409,6 +494,11 @@ export type Database = {
       generated_content: TableShape<GeneratedContent>;
       plan_assets: TableShape<PlanAsset>;
       plan_hotspots: TableShape<PlanHotspot>;
+      crm_contacts: TableShape<CrmContact>;
+      crm_deals: TableShape<CrmDeal>;
+      crm_notes: TableShape<CrmNote>;
+      crm_followups: TableShape<CrmFollowup>;
+      crm_targets: TableShape<CrmTarget>;
     };
     Views: {
       active_transactions: { Row: Transaction; Relationships: [] };
@@ -464,6 +554,10 @@ export type Database = {
       plan_kind: PlanKind;
       hotspot_shape: HotspotShape;
       hotspot_target: HotspotTarget;
+      crm_stage: CrmStage;
+      crm_product: CrmProduct;
+      crm_lead_source: CrmLeadSource;
+      crm_channel: CrmChannel;
     };
     CompositeTypes: { [_ in never]: never };
   };

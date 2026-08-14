@@ -119,3 +119,30 @@ supabase/
 
 Phase 1 is complete. Wire Supabase + `ANTHROPIC_API_KEY` (+ optional Google
 Maps key) and deploy to Vercel to run it live.
+
+## CRM / Pipeline (Trust Mortgage)
+
+A lightweight mortgage CRM lives under `/crm`, layered on the same Supabase
+project. It models the one thing a generic CRM gets wrong for mortgages: the
+work happens now, but the loan (and the commission) disburses months later.
+So every deal carries **two timelines** — `stage` (where the work is now) and
+`close_month` (the month the loan disburses and counts toward target).
+
+- **`/crm` — Today**: morning queue of due/overdue follow-ups, a "gone quiet"
+  nudge list, and pipeline headline stats. Reminders only — you message
+  clients yourself (WhatsApp/email quick-links provided).
+- **`/crm/pipeline`**: Kanban board of open deals across the 8 stages
+  (New lead → Contacted → Qualified → Docs collected → Submitted → Approved →
+  Disbursed, plus Lost/Dormant). Move a card with the inline stage picker.
+- **`/crm/forecast`**: month-by-month disbursement vs target. Disbursed money
+  is committed; open deals are probability-weighted. Undated deals are flagged.
+- **`/crm/contacts` + `/crm/contacts/[id]`**: contacts (a lead, later a
+  repeat/real-estate client) with **multiple deals each**, a running call log,
+  and per-contact reminders.
+- **`/crm/import`**: paste-CSV lead import (Meta Lead Ads export or anywhere).
+- **`/crm/settings`**: per-month disbursement target (default AED 10M).
+
+Setup: run migration `supabase/migrations/0025_crm.sql`. No new env vars.
+Manual + CSV lead entry today; the schema (a first-class `meta_ads` source)
+is already shaped for a Meta Lead Ads webhook to drop leads in automatically
+later, with no re-architecting.

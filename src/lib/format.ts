@@ -38,6 +38,20 @@ export function aed(value: number | null | undefined): string | null {
   }).format(value)}`;
 }
 
+/** Compact AED for headline figures: "AED 18.5M", "AED 720K". */
+export function aedShort(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) {
+    const m = value / 1_000_000;
+    return `AED ${(Math.round(m * 10) / 10).toLocaleString("en-AE")}M`;
+  }
+  if (abs >= 1_000) {
+    return `AED ${Math.round(value / 1_000)}K`;
+  }
+  return `AED ${Math.round(value)}`;
+}
+
 /** Plain grouped number. */
 export function num(value: number | null | undefined): string | null {
   if (value === null || value === undefined) return null;
