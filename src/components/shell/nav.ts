@@ -13,6 +13,10 @@ export type NavItem = {
 
 export const NAV: NavItem[] = [
   { label: "Overview", href: "/", milestone: null, ready: true },
+  { label: "CRM · Today", href: "/crm", milestone: null, ready: true },
+  { label: "Pipeline", href: "/crm/pipeline", milestone: null, ready: true },
+  { label: "Forecast", href: "/crm/forecast", milestone: null, ready: true },
+  { label: "Contacts", href: "/crm/contacts", milestone: null, ready: true },
   { label: "Ask", href: "/ask", milestone: null, ready: true },
   { label: "Map", href: "/map", milestone: 1, ready: true },
   { label: "Communities", href: "/communities", milestone: 2, ready: true },
