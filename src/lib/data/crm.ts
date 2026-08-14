@@ -7,15 +7,9 @@ import type {
   CrmFollowup,
   CrmTarget,
 } from "@/lib/db/types";
-import {
-  DEFAULT_MONTHLY_TARGET,
-  dealCommission,
-  dealDisbursement,
-  isOpenStage,
-  monthKey,
-  monthRange,
-  toMonthKey,
-} from "@/lib/crm";
+import { buildForecast, summarizePipeline, type PipelineSummary } from "@/lib/crm";
+
+export type { ForecastMonth } from "@/lib/crm";
 
 /**
  * CRM reads. Every function degrades to empty/neutral data when Supabase
@@ -181,116 +175,23 @@ export async function getTargets(): Promise<Map<string, number>> {
 
 // ---- Forecast --------------------------------------------------------
 
-export type ForecastMonth = {
-  month: string; // key YYYY-MM-01
-  target: number;
-  // Money expected to disburse this month, bucketed by deal.close_month.
-  committed: number; // disbursed deals
-  weighted: number; // open deals × probability
-  gross: number; // open deals at full value (unweighted)
-  commission: number; // weighted commission
-  dealCount: number;
-};
-
 /**
- * Month-by-month disbursement forecast vs target. Buckets every deal by its
- * close_month. Disbursed deals are "committed"; open deals are probability-
- * weighted. Deals without a close_month are returned separately.
+ * Month-by-month disbursement forecast vs target. Fetches deals + targets,
+ * then delegates the maths to the pure `buildForecast` in @/lib/crm so the
+ * exact same code path is covered by the test suite.
  */
-export async function getForecast(months = 6): Promise<{
-  rows: ForecastMonth[];
-  undated: { count: number; gross: number; weighted: number };
-  totalPipeline: number; // gross value of all open deals
-  totalWeighted: number;
-}> {
+export async function getForecast(months = 6): Promise<ReturnType<typeof buildForecast>> {
   const [deals, targets] = await Promise.all([getDealsWithContacts(), getTargets()]);
-  const keys = monthRange(new Date(), months);
-  const rows: ForecastMonth[] = keys.map((month) => ({
-    month,
-    target: targets.get(month) ?? DEFAULT_MONTHLY_TARGET,
-    committed: 0,
-    weighted: 0,
-    gross: 0,
-    commission: 0,
-    dealCount: 0,
-  }));
-  const byMonth = new Map(rows.map((r) => [r.month, r]));
-
-  const undated = { count: 0, gross: 0, weighted: 0 };
-  let totalPipeline = 0;
-  let totalWeighted = 0;
-
-  for (const d of deals) {
-    if (d.stage === "lost") continue;
-    const disb = dealDisbursement(d);
-    const open = isOpenStage(d.stage);
-    const weight = d.stage === "disbursed" ? 1 : d.probability / 100;
-    if (open) {
-      totalPipeline += disb;
-      totalWeighted += disb * weight;
-    }
-    const mk = toMonthKey(d.close_month);
-    if (!mk) {
-      if (open) {
-        undated.count += 1;
-        undated.gross += disb;
-        undated.weighted += disb * weight;
-      }
-      continue;
-    }
-    const row = byMonth.get(mk);
-    if (!row) continue; // outside the visible window
-    row.dealCount += 1;
-    row.gross += disb;
-    if (d.stage === "disbursed") {
-      row.committed += disb;
-      row.commission += dealCommission(d);
-    } else {
-      row.weighted += disb * weight;
-      row.commission += dealCommission(d) * weight;
-    }
-  }
-
-  return { rows, undated, totalPipeline, totalWeighted };
+  return buildForecast(deals, targets, months);
 }
 
 // ---- Headline counts for the CRM overview ----------------------------
 
-export async function getPipelineSummary(): Promise<{
-  totalContacts: number;
-  openDeals: number;
-  openValue: number;
-  weightedValue: number;
-  dueToday: number;
-  disbursedThisMonth: number;
-}> {
+export async function getPipelineSummary(): Promise<PipelineSummary> {
   const [deals, contacts, due] = await Promise.all([
     getDealsWithContacts(),
     getContacts(),
     getDueFollowups(0),
   ]);
-  const thisMonth = monthKey(new Date());
-  let openDeals = 0;
-  let openValue = 0;
-  let weightedValue = 0;
-  let disbursedThisMonth = 0;
-  for (const d of deals) {
-    if (isOpenStage(d.stage)) {
-      openDeals += 1;
-      const disb = dealDisbursement(d);
-      openValue += disb;
-      weightedValue += (disb * d.probability) / 100;
-    }
-    if (d.stage === "disbursed" && toMonthKey(d.close_month) === thisMonth) {
-      disbursedThisMonth += dealDisbursement(d);
-    }
-  }
-  return {
-    totalContacts: contacts.length,
-    openDeals,
-    openValue,
-    weightedValue,
-    dueToday: due.length,
-    disbursedThisMonth,
-  };
+  return summarizePipeline(deals, contacts.length, due.length);
 }

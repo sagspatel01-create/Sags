@@ -150,3 +150,129 @@ export function monthRange(from: Date, count: number): string[] {
 }
 
 export const DEFAULT_MONTHLY_TARGET = 10_000_000;
+
+// ---- Pure aggregation (shared by the data layer AND the tests) -------
+
+export type ForecastMonth = {
+  month: string; // key YYYY-MM-01
+  target: number;
+  committed: number; // disbursed deals
+  weighted: number; // open deals × probability
+  gross: number; // open deals at full value (unweighted)
+  commission: number; // weighted commission
+  dealCount: number;
+};
+
+type ForecastInput = Pick<
+  CrmDeal,
+  | "stage"
+  | "probability"
+  | "loan_amount"
+  | "property_value"
+  | "commission_amount"
+  | "commission_pct"
+  | "close_month"
+>;
+
+/**
+ * Month-by-month disbursement forecast vs target — the mortgage-specific
+ * heart of the CRM. Buckets each deal by its close_month (NOT when work
+ * started). Disbursed deals are committed; open deals are probability-
+ * weighted. Deals with no close_month are reported separately so nothing
+ * silently vanishes. Pure: same inputs → same output, no I/O.
+ */
+export function buildForecast(
+  deals: ForecastInput[],
+  targets: Map<string, number>,
+  months: number,
+  now: Date = new Date(),
+): {
+  rows: ForecastMonth[];
+  undated: { count: number; gross: number; weighted: number };
+  totalPipeline: number;
+  totalWeighted: number;
+} {
+  const keys = monthRange(now, months);
+  const rows: ForecastMonth[] = keys.map((month) => ({
+    month,
+    target: targets.get(month) ?? DEFAULT_MONTHLY_TARGET,
+    committed: 0,
+    weighted: 0,
+    gross: 0,
+    commission: 0,
+    dealCount: 0,
+  }));
+  const byMonth = new Map(rows.map((r) => [r.month, r]));
+
+  const undated = { count: 0, gross: 0, weighted: 0 };
+  let totalPipeline = 0;
+  let totalWeighted = 0;
+
+  for (const d of deals) {
+    if (d.stage === "lost") continue;
+    const disb = dealDisbursement(d);
+    const open = isOpenStage(d.stage);
+    const weight = d.stage === "disbursed" ? 1 : d.probability / 100;
+    if (open) {
+      totalPipeline += disb;
+      totalWeighted += disb * weight;
+    }
+    const mk = toMonthKey(d.close_month);
+    if (!mk) {
+      if (open) {
+        undated.count += 1;
+        undated.gross += disb;
+        undated.weighted += disb * weight;
+      }
+      continue;
+    }
+    const row = byMonth.get(mk);
+    if (!row) continue; // outside the visible window
+    row.dealCount += 1;
+    row.gross += disb;
+    if (d.stage === "disbursed") {
+      row.committed += disb;
+      row.commission += dealCommission(d);
+    } else {
+      row.weighted += disb * weight;
+      row.commission += dealCommission(d) * weight;
+    }
+  }
+
+  return { rows, undated, totalPipeline, totalWeighted };
+}
+
+export type PipelineSummary = {
+  totalContacts: number;
+  openDeals: number;
+  openValue: number;
+  weightedValue: number;
+  dueToday: number;
+  disbursedThisMonth: number;
+};
+
+/** Headline pipeline stats for the CRM overview. Pure. */
+export function summarizePipeline(
+  deals: ForecastInput[],
+  totalContacts: number,
+  dueToday: number,
+  now: Date = new Date(),
+): PipelineSummary {
+  const thisMonth = monthKey(now);
+  let openDeals = 0;
+  let openValue = 0;
+  let weightedValue = 0;
+  let disbursedThisMonth = 0;
+  for (const d of deals) {
+    if (isOpenStage(d.stage)) {
+      openDeals += 1;
+      const disb = dealDisbursement(d);
+      openValue += disb;
+      weightedValue += (disb * d.probability) / 100;
+    }
+    if (d.stage === "disbursed" && toMonthKey(d.close_month) === thisMonth) {
+      disbursedThisMonth += dealDisbursement(d);
+    }
+  }
+  return { totalContacts, openDeals, openValue, weightedValue, dueToday, disbursedThisMonth };
+}
