@@ -17,11 +17,11 @@ export function Sidebar() {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-ink-500 bg-ink-850/80 backdrop-blur md:flex">
       <div className="px-6 py-7">
-        <p className="text-eyebrow">Dubai</p>
+        <p className="text-eyebrow">Trust Mortgage</p>
         <p className="mt-1 font-display text-lg leading-tight text-paper-100">
-          Villa &amp; Townhouse
+          CRM &amp;
           <br />
-          Intelligence
+          Pipeline
         </p>
         <hr className="gold-rule mt-4" />
       </div>

@@ -24,9 +24,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dubai Villa & Townhouse Intelligence Engine",
+  title: "Trust Mortgage — CRM & Pipeline",
   description:
-    "A private intelligence engine for luxury Dubai villa and townhouse communities.",
+    "Trust Mortgage's private CRM: leads, pipeline, and month-by-month disbursement forecast, plus the property intelligence engine.",
 };
 
 export default function RootLayout({
