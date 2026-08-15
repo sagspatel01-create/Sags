@@ -44,7 +44,7 @@ function LoginForm() {
   return (
     <div className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        <p className="text-eyebrow">Dubai Villa &amp; Townhouse Intelligence</p>
+        <p className="text-eyebrow">Trust Mortgage · CRM &amp; Pipeline</p>
         <h1 className="mt-3 font-display text-3xl text-paper-100">
           Private access
         </h1>
